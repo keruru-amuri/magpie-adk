@@ -112,8 +112,8 @@ def get_supported_cities() -> dict:
     }
 
 
-def transfer_to_databricks_agent(tool_context: ToolContext) -> dict:
-    """Transfer the conversation to the Databricks specialist agent.
+def transfer_to_engineering_knowledge_agent(tool_context: ToolContext) -> dict:
+    """Transfer the conversation to the Engineering Knowledge Agent [db].
 
     Args:
         tool_context: The tool context for handling the transfer
@@ -122,16 +122,16 @@ def transfer_to_databricks_agent(tool_context: ToolContext) -> dict:
         dict: Transfer confirmation
     """
     try:
-        tool_context.actions.transfer_to_agent = "databricks_agent"
+        tool_context.actions.transfer_to_agent = "engineering_knowledge_agent_db"
         return {
             "status": "success",
-            "message": "Transferring to Databricks specialist agent for technical and engineering queries.",
-            "transferred_to": "databricks_agent"
+            "message": "Transferring to Engineering Knowledge Agent [db] for technical and engineering queries.",
+            "transferred_to": "engineering_knowledge_agent_db"
         }
     except Exception as e:
         return {
             "status": "error",
-            "message": f"Failed to transfer to Databricks agent: {str(e)}"
+            "message": f"Failed to transfer to Engineering Knowledge Agent: {str(e)}"
         }
 
 
@@ -173,12 +173,12 @@ root_agent = LlmAgent(
         "Always use the appropriate tools to get weather or time information when requested. "
         "\n\n"
         "TRANSFER CAPABILITIES:\n"
-        "- If users ask technical or engineering questions, use 'transfer_to_databricks_agent'\n"
+        "- If users ask technical or engineering questions, use 'transfer_to_engineering_knowledge_agent'\n"
         "- If users ask general questions unrelated to weather/time, use 'transfer_to_general_chat_agent'\n"
         "- Only transfer when the query is clearly outside your weather and time expertise\n"
         "\n\n"
         "For weather and time queries, handle them directly using your tools. "
         "For other topics, transfer to the appropriate specialist agent."
     ),
-    tools=[get_weather, get_current_time, get_supported_cities, transfer_to_databricks_agent, transfer_to_general_chat_agent],
+    tools=[get_weather, get_current_time, get_supported_cities, transfer_to_engineering_knowledge_agent, transfer_to_general_chat_agent],
 )

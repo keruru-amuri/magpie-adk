@@ -250,7 +250,7 @@ def get_agent_capabilities() -> Dict[str, Any]:
             "Transfer to general chat agent for non-technical conversations"
         ],
         "description": (
-            "I'm a Databricks agent that can query LLM models hosted on Databricks serving endpoints. "
+            "I'm an Engineering Knowledge Agent [db] that can query LLM models hosted on Databricks serving endpoints. "
             "I use service principal authentication to securely access Databricks resources and can "
             "help with engineering data queries, technical documentation questions, and knowledge base searches. "
             "I can also transfer conversations to other specialist agents when appropriate."
@@ -264,17 +264,17 @@ def get_agent_capabilities() -> Dict[str, Any]:
     }
 
 
-# Create the Databricks agent
+# Create the Engineering Knowledge agent
 root_agent = LlmAgent(
-    name="databricks_agent",
+    name="engineering_knowledge_agent_db",
     model=LiteLlm(model=AZURE_OPENAI_MODEL),  # Using Azure OpenAI via LiteLLM for agent reasoning
     description=(
-        "Specialized agent for querying Databricks LLM serving endpoints. "
+        "[db] Engineering Knowledge Agent - Specialized agent for querying Databricks LLM serving endpoints. "
         "Handles technical and engineering queries using RAG-enabled models hosted on Databricks. "
         "Uses service principal authentication for secure access to Databricks resources."
     ),
     instruction=(
-        "You are a Databricks specialist agent with access to LLM models hosted on Databricks serving endpoints. "
+        "You are an Engineering Knowledge Agent [db] with access to LLM models hosted on Databricks serving endpoints. "
         "Your primary role is to help users query and interact with Databricks-hosted AI models, particularly "
         "for engineering and technical questions. "
         "\n\n"

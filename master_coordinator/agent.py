@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 # Import sub-agents
 from weather_time_agent.agent import root_agent as weather_time_agent
 from general_chat_agent.agent import root_agent as general_chat_agent
-from databricks_agent.agent import root_agent as databricks_agent
+from engineering_knowledge_agent.agent import root_agent as engineering_knowledge_agent
 
 # Load environment variables from .env file
 load_dotenv()
@@ -45,8 +45,8 @@ def get_system_status() -> dict:
                 "specialties": ["general chat", "advice", "motivation", "casual conversation"]
             },
             {
-                "name": "databricks_agent",
-                "description": "Queries Databricks LLM serving endpoints for technical and engineering questions",
+                "name": "engineering_knowledge_agent_db",
+                "description": "[db] Engineering Knowledge Agent - Queries Databricks LLM serving endpoints for technical and engineering questions",
                 "specialties": ["databricks queries", "engineering data", "technical documentation", "RAG models"]
             }
         ],
@@ -78,7 +78,7 @@ def get_routing_help() -> dict:
                 "Casual chat and discussion",
                 "Non-specialized requests"
             ],
-            "databricks_agent": [
+            "engineering_knowledge_agent_db": [
                 "Technical and engineering questions",
                 "Databricks model queries",
                 "Engineering data analysis",
@@ -106,13 +106,13 @@ root_agent = LlmAgent(
         "- For weather reports, weather conditions, or current time in cities: "
         "Use transfer_to_agent(agent_name='weather_time_agent')\n"
         "- For technical/engineering questions, Databricks queries, or data analysis: "
-        "Use transfer_to_agent(agent_name='databricks_agent')\n"
+        "Use transfer_to_agent(agent_name='engineering_knowledge_agent_db')\n"
         "- For general conversation, advice, motivation, creative help, or non-specialized requests: "
         "Use transfer_to_agent(agent_name='general_chat_agent')\n"
         "\n\n"
         "AVAILABLE AGENTS:\n"
         "1. weather_time_agent: Specialized in weather reports and time information for major cities\n"
-        "2. databricks_agent: Specialized in technical/engineering questions and Databricks model queries\n"
+        "2. engineering_knowledge_agent_db: [db] Engineering Knowledge Agent for technical/engineering questions and Databricks model queries\n"
         "3. general_chat_agent: Handles general conversations, advice, and casual interactions\n"
         "\n\n"
         "Always analyze the user's request carefully and route to the most appropriate agent. "
@@ -120,5 +120,5 @@ root_agent = LlmAgent(
         "You can also provide system information using your tools when asked about the system itself."
     ),
     tools=[get_system_status, get_routing_help],
-    sub_agents=[weather_time_agent, databricks_agent, general_chat_agent],  # This enables LLM-driven delegation
+    sub_agents=[weather_time_agent, engineering_knowledge_agent, general_chat_agent],  # This enables LLM-driven delegation
 )

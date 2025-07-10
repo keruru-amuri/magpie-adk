@@ -85,8 +85,8 @@ def transfer_to_weather_agent(tool_context: ToolContext) -> dict:
         }
 
 
-def transfer_to_databricks_agent(tool_context: ToolContext) -> dict:
-    """Transfer the conversation to the Databricks specialist agent.
+def transfer_to_engineering_knowledge_agent(tool_context: ToolContext) -> dict:
+    """Transfer the conversation to the Engineering Knowledge Agent [db].
 
     Args:
         tool_context: The tool context for handling the transfer
@@ -95,16 +95,16 @@ def transfer_to_databricks_agent(tool_context: ToolContext) -> dict:
         dict: Transfer confirmation
     """
     try:
-        tool_context.actions.transfer_to_agent = "databricks_agent"
+        tool_context.actions.transfer_to_agent = "engineering_knowledge_agent_db"
         return {
             "status": "success",
-            "message": "Transferring to Databricks specialist agent for technical and engineering queries.",
-            "transferred_to": "databricks_agent"
+            "message": "Transferring to Engineering Knowledge Agent [db] for technical and engineering queries.",
+            "transferred_to": "engineering_knowledge_agent_db"
         }
     except Exception as e:
         return {
             "status": "error",
-            "message": f"Failed to transfer to Databricks agent: {str(e)}"
+            "message": f"Failed to transfer to Engineering Knowledge Agent: {str(e)}"
         }
 
 
@@ -134,7 +134,7 @@ def get_agent_capabilities() -> dict:
         ),
         "transfer_capabilities": [
             "weather_time_agent: For weather reports and time information",
-            "databricks_agent: For technical and engineering questions"
+            "engineering_knowledge_agent_db: [db] For technical and engineering questions"
         ]
     }
 
@@ -156,11 +156,11 @@ root_agent = LlmAgent(
         "\n\n"
         "TRANSFER CAPABILITIES:\n"
         "- If users ask about weather or time information, use 'transfer_to_weather_agent'\n"
-        "- If users ask technical or engineering questions, use 'transfer_to_databricks_agent'\n"
+        "- If users ask technical or engineering questions, use 'transfer_to_engineering_knowledge_agent'\n"
         "- Only transfer when the query is clearly outside your general conversation expertise\n"
         "\n\n"
         "Always aim to be helpful, informative, and maintain a positive, friendly tone. "
         "For specialized topics, don't hesitate to transfer to the appropriate expert agent."
     ),
-    tools=[get_conversation_tips, get_daily_motivation, get_agent_capabilities, transfer_to_weather_agent, transfer_to_databricks_agent],
+    tools=[get_conversation_tips, get_daily_motivation, get_agent_capabilities, transfer_to_weather_agent, transfer_to_engineering_knowledge_agent],
 )
