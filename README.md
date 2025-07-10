@@ -30,20 +30,51 @@ This project implements a sophisticated multi-agent system using Google Agent De
 The project uses environment variables defined in `.env`:
 
 ```env
+# AMOS Multi-Agent System Configuration Template
+# Copy this file to .env and fill in your actual values
+#
+# This configuration supports:
+# - Master Coordinator (intelligent routing)
+# - Weather Time Agent (weather & time queries)
+# - Engineering Knowledge Agent [db] (Databricks technical queries)
+# - General Chat Agent (conversations & advice)
+
 # Azure OpenAI API Configuration
-AZURE_OPENAI_API_KEY=your_api_key_here
+AZURE_OPENAI_API_KEY=your_azure_openai_api_key_here
 AZURE_OPENAI_ENDPOINT=https://your-endpoint.openai.azure.com/
 AZURE_OPENAI_API_VERSION=2024-12-01-preview
 
-# Model Configuration
+# LiteLLM Azure OpenAI Model Configuration
 AZURE_OPENAI_DEPLOYMENT_NAME=gpt-4.1
 AZURE_OPENAI_MODEL=azure/gpt-4.1
 
-# Databricks Configuration (for Engineering Knowledge Agent)
+# ADK Configuration
+# Disable Vertex AI to use direct API keys
+GOOGLE_GENAI_USE_VERTEXAI=False
+
+# Databricks Configuration (for Engineering Knowledge Agent [db])
+# Required for service principal authentication to Databricks serving endpoints
+#
+# How to obtain these values:
+# 1. DATABRICKS_HOST: Your Databricks workspace URL (e.g., https://adb-123456789.11.azuredatabricks.net)
+# 2. ARM_TENANT_ID: Azure AD tenant ID where your service principal is registered
+# 3. ARM_CLIENT_ID: Service principal application (client) ID
+# 4. ARM_CLIENT_SECRET: Service principal client secret
+#
+# Note: The service principal must have access to Databricks serving endpoints
 DATABRICKS_HOST=https://your-databricks-workspace.azuredatabricks.net
 ARM_TENANT_ID=your_azure_tenant_id
 ARM_CLIENT_ID=your_service_principal_client_id
 ARM_CLIENT_SECRET=your_service_principal_secret
+
+# Multi-Agent System Configuration
+DEFAULT_LLM_MODEL=azure/gpt-4.1
+DEFAULT_TEMPERATURE=0.2
+DEFAULT_MAX_TOKENS=1000
+
+# Logging Configuration
+AGENT_LOG_LEVEL=INFO
+LITELLM_DEBUG=False
 ```
 
 ## Installation
