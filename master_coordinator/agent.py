@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 # Import sub-agents
 from weather_time_agent.agent import root_agent as weather_time_agent
 from general_chat_agent.agent import root_agent as general_chat_agent
+from databricks_agent.agent import root_agent as databricks_agent
 
 # Load environment variables from .env file
 load_dotenv()
@@ -39,9 +40,14 @@ def get_system_status() -> dict:
                 "specialties": ["weather", "time", "timezone information"]
             },
             {
-                "name": "general_chat_agent", 
+                "name": "general_chat_agent",
                 "description": "Handles general conversations and non-specialized requests",
                 "specialties": ["general chat", "advice", "motivation", "casual conversation"]
+            },
+            {
+                "name": "databricks_agent",
+                "description": "Queries Databricks LLM serving endpoints for technical and engineering questions",
+                "specialties": ["databricks queries", "engineering data", "technical documentation", "RAG models"]
             }
         ],
         "model": AZURE_OPENAI_MODEL,
@@ -59,7 +65,7 @@ def get_routing_help() -> dict:
         "routing_info": {
             "weather_time_agent": [
                 "Weather reports for cities",
-                "Current time in different cities", 
+                "Current time in different cities",
                 "Timezone information",
                 "Questions about weather conditions",
                 "Time-related queries"
@@ -71,6 +77,14 @@ def get_routing_help() -> dict:
                 "General knowledge questions",
                 "Casual chat and discussion",
                 "Non-specialized requests"
+            ],
+            "databricks_agent": [
+                "Technical and engineering questions",
+                "Databricks model queries",
+                "Engineering data analysis",
+                "Technical documentation searches",
+                "RAG-based knowledge retrieval",
+                "Databricks serving endpoint interactions"
             ]
         },
         "note": "The coordinator automatically routes your request to the most appropriate specialist agent."
@@ -91,17 +105,20 @@ root_agent = LlmAgent(
         "ROUTING GUIDELINES:\n"
         "- For weather reports, weather conditions, or current time in cities: "
         "Use transfer_to_agent(agent_name='weather_time_agent')\n"
+        "- For technical/engineering questions, Databricks queries, or data analysis: "
+        "Use transfer_to_agent(agent_name='databricks_agent')\n"
         "- For general conversation, advice, motivation, creative help, or non-specialized requests: "
         "Use transfer_to_agent(agent_name='general_chat_agent')\n"
         "\n\n"
         "AVAILABLE AGENTS:\n"
         "1. weather_time_agent: Specialized in weather reports and time information for major cities\n"
-        "2. general_chat_agent: Handles general conversations, advice, and casual interactions\n"
+        "2. databricks_agent: Specialized in technical/engineering questions and Databricks model queries\n"
+        "3. general_chat_agent: Handles general conversations, advice, and casual interactions\n"
         "\n\n"
         "Always analyze the user's request carefully and route to the most appropriate agent. "
         "If you're unsure, default to the general_chat_agent for broader conversations. "
         "You can also provide system information using your tools when asked about the system itself."
     ),
     tools=[get_system_status, get_routing_help],
-    sub_agents=[weather_time_agent, general_chat_agent],  # This enables LLM-driven delegation
+    sub_agents=[weather_time_agent, databricks_agent, general_chat_agent],  # This enables LLM-driven delegation
 )
