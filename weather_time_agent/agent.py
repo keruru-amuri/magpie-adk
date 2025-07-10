@@ -3,6 +3,7 @@ import datetime
 from zoneinfo import ZoneInfo
 from google.adk.agents import LlmAgent
 from google.adk.models.lite_llm import LiteLlm
+from google.adk.tools import ToolContext
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
@@ -98,7 +99,7 @@ def get_current_time(city: str) -> dict:
 
 def get_supported_cities() -> dict:
     """Returns a list of cities supported by this agent.
-    
+
     Returns:
         dict: List of supported cities.
     """
@@ -109,6 +110,52 @@ def get_supported_cities() -> dict:
         ],
         "message": "I can provide weather and time information for these major cities."
     }
+
+
+def transfer_to_databricks_agent(tool_context: ToolContext) -> dict:
+    """Transfer the conversation to the Databricks specialist agent.
+
+    Args:
+        tool_context: The tool context for handling the transfer
+
+    Returns:
+        dict: Transfer confirmation
+    """
+    try:
+        tool_context.actions.transfer_to_agent = "databricks_agent"
+        return {
+            "status": "success",
+            "message": "Transferring to Databricks specialist agent for technical and engineering queries.",
+            "transferred_to": "databricks_agent"
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": f"Failed to transfer to Databricks agent: {str(e)}"
+        }
+
+
+def transfer_to_general_chat_agent(tool_context: ToolContext) -> dict:
+    """Transfer the conversation to the general chat agent.
+
+    Args:
+        tool_context: The tool context for handling the transfer
+
+    Returns:
+        dict: Transfer confirmation
+    """
+    try:
+        tool_context.actions.transfer_to_agent = "general_chat_agent"
+        return {
+            "status": "success",
+            "message": "Transferring to general chat agent for broader conversations and non-weather topics.",
+            "transferred_to": "general_chat_agent"
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": f"Failed to transfer to general chat agent: {str(e)}"
+        }
 
 # Create the weather and time specialist agent
 root_agent = LlmAgent(
@@ -124,8 +171,14 @@ root_agent = LlmAgent(
         "for major cities around the world. "
         "You support New York, London, Tokyo, Los Angeles, Paris, and Sydney. "
         "Always use the appropriate tools to get weather or time information when requested. "
-        "If asked about topics outside of weather and time, politely suggest that the user "
-        "might want to use the general chat agent for broader conversations."
+        "\n\n"
+        "TRANSFER CAPABILITIES:\n"
+        "- If users ask technical or engineering questions, use 'transfer_to_databricks_agent'\n"
+        "- If users ask general questions unrelated to weather/time, use 'transfer_to_general_chat_agent'\n"
+        "- Only transfer when the query is clearly outside your weather and time expertise\n"
+        "\n\n"
+        "For weather and time queries, handle them directly using your tools. "
+        "For other topics, transfer to the appropriate specialist agent."
     ),
-    tools=[get_weather, get_current_time, get_supported_cities],
+    tools=[get_weather, get_current_time, get_supported_cities, transfer_to_databricks_agent, transfer_to_general_chat_agent],
 )

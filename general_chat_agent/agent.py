@@ -1,6 +1,7 @@
 import os
 from google.adk.agents import LlmAgent
 from google.adk.models.lite_llm import LiteLlm
+from google.adk.tools import ToolContext
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
@@ -61,9 +62,55 @@ def get_daily_motivation() -> dict:
         "message": "Remember, every day is a new opportunity to grow and achieve your goals!"
     }
 
+def transfer_to_weather_agent(tool_context: ToolContext) -> dict:
+    """Transfer the conversation to the weather and time specialist agent.
+
+    Args:
+        tool_context: The tool context for handling the transfer
+
+    Returns:
+        dict: Transfer confirmation
+    """
+    try:
+        tool_context.actions.transfer_to_agent = "weather_time_agent"
+        return {
+            "status": "success",
+            "message": "Transferring to weather and time specialist agent for weather-related queries.",
+            "transferred_to": "weather_time_agent"
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": f"Failed to transfer to weather agent: {str(e)}"
+        }
+
+
+def transfer_to_databricks_agent(tool_context: ToolContext) -> dict:
+    """Transfer the conversation to the Databricks specialist agent.
+
+    Args:
+        tool_context: The tool context for handling the transfer
+
+    Returns:
+        dict: Transfer confirmation
+    """
+    try:
+        tool_context.actions.transfer_to_agent = "databricks_agent"
+        return {
+            "status": "success",
+            "message": "Transferring to Databricks specialist agent for technical and engineering queries.",
+            "transferred_to": "databricks_agent"
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": f"Failed to transfer to Databricks agent: {str(e)}"
+        }
+
+
 def get_agent_capabilities() -> dict:
     """Returns information about this agent's capabilities.
-    
+
     Returns:
         dict: Information about the agent's capabilities.
     """
@@ -75,13 +122,20 @@ def get_agent_capabilities() -> dict:
             "Offering conversation tips and social advice",
             "Discussing current events, hobbies, and interests",
             "Helping with creative writing and brainstorming",
-            "Providing general knowledge and explanations"
+            "Providing general knowledge and explanations",
+            "Transfer to weather agent for weather-related queries",
+            "Transfer to Databricks agent for technical/engineering questions"
         ],
         "description": (
             "I'm a general conversation agent powered by Azure OpenAI GPT-4.1 via LiteLLM. "
             "I'm designed to have natural, engaging conversations on a wide variety of topics. "
-            "I can help with general questions, provide motivation, offer advice, and simply chat!"
-        )
+            "I can help with general questions, provide motivation, offer advice, and simply chat! "
+            "I can also transfer conversations to specialist agents when needed."
+        ),
+        "transfer_capabilities": [
+            "weather_time_agent: For weather reports and time information",
+            "databricks_agent: For technical and engineering questions"
+        ]
     }
 
 # Create the general chat agent
@@ -99,9 +153,14 @@ root_agent = LlmAgent(
         "You should be warm, supportive, and encouraging in your responses. "
         "You can discuss current events, hobbies, provide general advice, help with creative tasks, "
         "and simply chat about whatever the user is interested in. "
-        "If a user asks about weather or time information, suggest they might want to use "
-        "the weather and time specialist agent instead. "
-        "Always aim to be helpful, informative, and maintain a positive, friendly tone."
+        "\n\n"
+        "TRANSFER CAPABILITIES:\n"
+        "- If users ask about weather or time information, use 'transfer_to_weather_agent'\n"
+        "- If users ask technical or engineering questions, use 'transfer_to_databricks_agent'\n"
+        "- Only transfer when the query is clearly outside your general conversation expertise\n"
+        "\n\n"
+        "Always aim to be helpful, informative, and maintain a positive, friendly tone. "
+        "For specialized topics, don't hesitate to transfer to the appropriate expert agent."
     ),
-    tools=[get_conversation_tips, get_daily_motivation, get_agent_capabilities],
+    tools=[get_conversation_tips, get_daily_motivation, get_agent_capabilities, transfer_to_weather_agent, transfer_to_databricks_agent],
 )
