@@ -8,7 +8,9 @@ This project implements a sophisticated multi-agent system using Google Agent De
 - **Google ADK Integration**: Uses Google's Agent Development Kit for agent orchestration
 - **Azure OpenAI**: Leverages Azure OpenAI GPT-4.1 model via LiteLLM
 - **Intelligent Routing**: LLM-driven delegation between specialized agents
-- **Specialized Agents**: Weather/time specialist and general conversation agent
+- **Specialized Agents**: Weather/time, engineering knowledge [db], and general conversation agents
+- **Databricks Integration**: Engineering knowledge agent with service principal authentication
+- **Agent Transfer System**: Seamless handoffs between specialist agents
 - **Web Interface**: Provides a web-based chat interface via `adk web`
 
 ## Prerequisites
@@ -16,6 +18,12 @@ This project implements a sophisticated multi-agent system using Google Agent De
 - Python 3.8+
 - Azure OpenAI account with GPT-4.1 deployment
 - Valid Azure OpenAI API credentials
+- Databricks workspace with serving endpoints (for engineering knowledge agent)
+- Azure service principal for Databricks authentication
+
+## Tag Information
+
+- [db] stands for DataBricks.
 
 ## Configuration
 
@@ -30,6 +38,12 @@ AZURE_OPENAI_API_VERSION=2024-12-01-preview
 # Model Configuration
 AZURE_OPENAI_DEPLOYMENT_NAME=gpt-4.1
 AZURE_OPENAI_MODEL=azure/gpt-4.1
+
+# Databricks Configuration (for Engineering Knowledge Agent)
+DATABRICKS_HOST=https://your-databricks-workspace.azuredatabricks.net
+ARM_TENANT_ID=your_azure_tenant_id
+ARM_CLIENT_ID=your_service_principal_client_id
+ARM_CLIENT_SECRET=your_service_principal_secret
 ```
 
 ## Installation
@@ -85,6 +99,12 @@ The system automatically routes your requests to the appropriate specialist agen
 - **Time queries**: "What time is it in Tokyo?"
 - **Supported cities**: New York, London, Tokyo, Los Angeles, Paris, Sydney
 
+#### Technical & Engineering Questions (→ engineering_knowledge_agent_db [db])
+- **Engineering data**: "What are the best practices for data pipeline design?"
+- **Technical documentation**: "How do I configure Databricks clusters?"
+- **Knowledge base queries**: "What are the latest engineering standards?"
+- **RAG-powered responses**: Leverages Databricks serving endpoints with engineering knowledge
+
 #### General Conversation (→ general_chat_agent)
 - **General chat**: "How are you today?"
 - **Advice**: "Can you give me some motivation?"
@@ -100,25 +120,32 @@ The master coordinator intelligently analyzes your request and routes it to the 
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                    AMOS Multi-Agent System                  │
-├─────────────────────────────────────────────────────────────┤
-│                   Master Coordinator                       │
-│              (LLM-Driven Delegation)                       │
-├─────────────────────┬───────────────────────────────────────┤
-│  Weather Time Agent │         General Chat Agent          │
-│  ┌─────────────────┐│  ┌─────────────────────────────────┐ │
-│  │ • Weather Info  ││  │ • General Conversation         │ │
-│  │ • Time Zones    ││  │ • Advice & Motivation          │ │
-│  │ • City Support  ││  │ • Creative Help                │ │
-│  └─────────────────┘│  │ • Casual Chat                  │ │
-│                     │  └─────────────────────────────────┘ │
-└─────────────────────┴───────────────────────────────────────┘
-                              │
-                    ┌──────────────┐    ┌─────────────────┐
-                    │   LiteLLM    │───▶│  Azure OpenAI   │
-                    │  (Proxy)     │    │   (GPT-4.1)     │
-                    └──────────────┘    └─────────────────┘
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           AMOS Multi-Agent System                          │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                          Master Coordinator                                │
+│                     (LLM-Driven Delegation)                                │
+├─────────────────┬─────────────────────────┬─────────────────────────────────┤
+│ Weather Time    │ Engineering Knowledge   │      General Chat Agent        │
+│     Agent       │    Agent [db]           │                                 │
+│ ┌─────────────┐ │ ┌─────────────────────┐ │ ┌─────────────────────────────┐ │
+│ │• Weather    │ │ │• Databricks Queries │ │ │• General Conversation       │ │
+│ │• Time Zones │ │ │• Engineering Data   │ │ │• Advice & Motivation        │ │
+│ │• City Info  │ │ │• Technical Docs     │ │ │• Creative Help              │ │
+│ └─────────────┘ │ │• RAG Models         │ │ │• Casual Chat                │ │
+│                 │ │• Service Principal  │ │ └─────────────────────────────┘ │
+│                 │ └─────────────────────┘ │                                 │
+└─────────────────┴─────────────────────────┴─────────────────────────────────┘
+                                      │
+                    ┌──────────────┐  │  ┌─────────────────┐
+                    │   LiteLLM    │──┼─▶│  Azure OpenAI   │
+                    │  (Proxy)     │  │  │   (GPT-4.1)     │
+                    └──────────────┘  │  └─────────────────┘
+                                      │
+                                      │  ┌─────────────────┐
+                                      └─▶│   Databricks    │
+                                         │ Serving Endpoints│
+                                         └─────────────────┘
 ```
 
 ## Agent Structure
@@ -129,6 +156,9 @@ magpie-agent-adk/
 │   ├── __init__.py
 │   └── agent.py
 ├── weather_time_agent/          # Weather & time specialist
+│   ├── __init__.py
+│   └── agent.py
+├── engineering_knowledge_agent/ # [db] Engineering knowledge specialist
 │   ├── __init__.py
 │   └── agent.py
 ├── general_chat_agent/          # General conversation agent
@@ -144,9 +174,35 @@ magpie-agent-adk/
 
 - **`master_coordinator/`**: Central orchestrator with intelligent routing
 - **`weather_time_agent/`**: Specialized weather and time information agent
+- **`engineering_knowledge_agent/`**: [db] Engineering knowledge specialist with Databricks integration
 - **`general_chat_agent/`**: General conversation and advice agent
 - **`requirements.txt`**: Python dependencies
-- **`.env`**: Environment configuration
+- **`.env`**: Environment configuration (includes Databricks credentials)
+
+## Agent Transfer System
+
+The system includes seamless agent-to-agent transfer capabilities:
+
+- **Intelligent Routing**: Master coordinator automatically routes requests to appropriate specialists
+- **Peer-to-Peer Transfers**: Individual agents can transfer conversations when queries fall outside their expertise
+- **Context Preservation**: Transfers maintain conversation context and history
+
+### Transfer Examples:
+- Weather agent → Engineering Knowledge agent (for technical questions)
+- Engineering Knowledge agent → Weather agent (for weather queries)
+- Any agent → General Chat agent (for casual conversation)
+
+## Databricks Integration
+
+The Engineering Knowledge Agent [db] provides:
+
+- **Service Principal Authentication**: Secure access using Azure AD service principal
+- **RAG-Enabled Queries**: Leverages Databricks serving endpoints with engineering knowledge base
+- **OpenAI-Compatible API**: Uses familiar OpenAI client interface with Databricks backend
+- **Engineering Focus**: Specialized for technical documentation and engineering data queries
+
+### Supported Model:
+- `agents_engineering-demo_rag_mabes-rag_mabes_advanced_v8_2`: Advanced RAG model for engineering queries
 
 ## Customization
 
