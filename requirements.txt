@@ -1,0 +1,8 @@
+# Google Agent Development Kit with Azure OpenAI via LiteLLM
+google-adk
+openai
+litellm
+python-dotenv
+
+# Additional useful packages
+requests
