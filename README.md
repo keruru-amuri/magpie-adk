@@ -1,22 +1,23 @@
-# AMOS Multi-Agent System with Google ADK and Azure OpenAI
+# MAGPIE (MAG Platform for Intelligent Execution) with Google ADK and Azure OpenAI
 
-This project implements a sophisticated multi-agent system using Google Agent Development Kit (ADK) with Azure OpenAI models via LiteLLM. The system features a master coordinator that intelligently routes requests to specialized sub-agents.
+This project implements the MAGPIE platform - a sophisticated multi-agent platform designed to support various types of agents using Google Agent Development Kit (ADK) with Azure OpenAI models via LiteLLM. The platform features a master coordinator that intelligently routes requests to specialized sub-agents.
 
 ## Features
 
 - **Multi-Agent Architecture**: Master coordinator with specialized sub-agents
 - **Google ADK Integration**: Uses Google's Agent Development Kit for agent orchestration
-- **Azure OpenAI**: Leverages Azure OpenAI GPT-4.1 model via LiteLLM
+- **Multi-Model Support**: Choose from 4 Azure models (GPT-4.1, GPT-4.1-mini, GPT-4.1-nano, DeepSeek-R1-0528)
+- **Agent-Specific Models**: Each agent can use a different model optimized for its tasks
 - **Intelligent Routing**: LLM-driven delegation between specialized agents
-- **Specialized Agents**: Weather/time, engineering knowledge [db], and general conversation agents
-- **Databricks Integration**: Engineering knowledge agent with service principal authentication
+- **Specialized Agents**: Engineering process procedure agent with aviation query enhancement, and general conversation agents
+- **Databricks Integration**: Engineering process procedure agent with service principal authentication and automatic query enhancement
 - **Agent Transfer System**: Seamless handoffs between specialist agents
 - **Web Interface**: Provides a web-based chat interface via `adk web`
 
 ## Prerequisites
 
 - Python 3.8+
-- Azure OpenAI account with GPT-4.1 deployment
+- Azure OpenAI account with model deployments (GPT-4.1, GPT-4.1-mini, GPT-4.1-nano, DeepSeek-R1-0528)
 - Valid Azure OpenAI API credentials
 - Databricks workspace with serving endpoints (for engineering knowledge agent)
 - Azure service principal for Databricks authentication
@@ -30,21 +31,33 @@ This project implements a sophisticated multi-agent system using Google Agent De
 The project uses environment variables defined in `.env`:
 
 ```env
-# AMOS Multi-Agent System Configuration Template
+# MAGPIE Platform Configuration Template
 # Copy this file to .env and fill in your actual values
 #
 # This configuration supports:
 # - Master Coordinator (intelligent routing)
-# - Weather Time Agent (weather & time queries)
-# - Engineering Knowledge Agent [db] (Databricks technical queries)
+# - Engineering Process Procedure Agent [db] (Databricks technical queries)
 # - General Chat Agent (conversations & advice)
+# - Multi-Model Support (4 different Azure models)
 
 # Azure OpenAI API Configuration
 AZURE_OPENAI_API_KEY=your_azure_openai_api_key_here
 AZURE_OPENAI_ENDPOINT=https://your-endpoint.openai.azure.com/
 AZURE_OPENAI_API_VERSION=2024-12-01-preview
 
-# LiteLLM Azure OpenAI Model Configuration
+# Multi-Model Configuration
+# Available Models: gpt-4.1, gpt-4.1-mini, gpt-4.1-nano, DeepSeek-R1-0528
+AVAILABLE_MODELS_GPT41=azure/gpt-4.1
+AVAILABLE_MODELS_GPT41_MINI=azure/gpt-4.1-mini
+AVAILABLE_MODELS_GPT41_NANO=azure/gpt-4.1-nano
+AVAILABLE_MODELS_DEEPSEEK=azure/DeepSeek-R1-0528
+
+# Agent-Specific Model Configuration
+MASTER_COORDINATOR_MODEL=azure/gpt-4.1
+ENGINEERING_PROCESS_AGENT_MODEL=azure/DeepSeek-R1-0528
+GENERAL_CHAT_AGENT_MODEL=azure/gpt-4.1-mini
+
+# Legacy Configuration (backward compatibility)
 AZURE_OPENAI_DEPLOYMENT_NAME=gpt-4.1
 AZURE_OPENAI_MODEL=azure/gpt-4.1
 
@@ -52,7 +65,10 @@ AZURE_OPENAI_MODEL=azure/gpt-4.1
 # Disable Vertex AI to use direct API keys
 GOOGLE_GENAI_USE_VERTEXAI=False
 
-# Databricks Configuration (for Engineering Knowledge Agent [db])
+# Model Selection Strategy
+MODEL_SELECTION_STRATEGY=agent_specific
+
+# Databricks Configuration (for Engineering Process Procedure Agent [db])
 # Required for service principal authentication to Databricks serving endpoints
 #
 # How to obtain these values:
@@ -67,7 +83,7 @@ ARM_TENANT_ID=your_azure_tenant_id
 ARM_CLIENT_ID=your_service_principal_client_id
 ARM_CLIENT_SECRET=your_service_principal_secret
 
-# Multi-Agent System Configuration
+# MAGPIE Platform Configuration
 DEFAULT_LLM_MODEL=azure/gpt-4.1
 DEFAULT_TEMPERATURE=0.2
 DEFAULT_MAX_TOKENS=1000
@@ -76,6 +92,33 @@ DEFAULT_MAX_TOKENS=1000
 AGENT_LOG_LEVEL=INFO
 LITELLM_DEBUG=False
 ```
+
+## Multi-Model Support
+
+The MAGPIE platform supports 4 different Azure models, allowing each agent to use the most suitable model for its specific tasks:
+
+| Model | Use Case | Characteristics |
+|-------|----------|-----------------|
+| **GPT-4.1** | Complex reasoning, routing decisions | High capability, higher cost |
+| **GPT-4.1 Mini** | General conversation, casual chat | Balanced capability/cost |
+| **GPT-4.1 Nano** | Focused tasks, query enhancement | Fast, cost-effective |
+| **DeepSeek-R1-0528** | Technical queries, reasoning | 128K context, strong reasoning |
+
+### Model Selection Strategies
+
+- **`agent_specific`** (Recommended): Each agent uses its configured model
+- **`default`**: All agents use the same default model
+- **`environment`**: Legacy single-model mode
+
+### Validation
+
+Test your multi-model configuration:
+
+```bash
+python validate_multi_model_config.py
+```
+
+For detailed configuration guide, see [MULTI_MODEL_CONFIGURATION_GUIDE.md](MULTI_MODEL_CONFIGURATION_GUIDE.md).
 
 ## Installation
 
@@ -123,18 +166,13 @@ Then open http://localhost:8000 in your browser.
 
 ### 3. Interact with the Multi-Agent System
 
-The system automatically routes your requests to the appropriate specialist agent:
+The platform automatically routes your requests to the appropriate specialist agent:
 
-#### Weather & Time Queries (→ weather_time_agent)
-- **Weather queries**: "What's the weather in New York?"
-- **Time queries**: "What time is it in Tokyo?"
-- **Supported cities**: New York, London, Tokyo, Los Angeles, Paris, Sydney
-
-#### Technical & Engineering Questions (→ engineering_knowledge_agent_db [db])
-- **Engineering data**: "What are the best practices for data pipeline design?"
-- **Technical documentation**: "How do I configure Databricks clusters?"
-- **Knowledge base queries**: "What are the latest engineering standards?"
-- **RAG-powered responses**: Leverages Databricks serving endpoints with engineering knowledge
+#### Technical & Engineering Questions (→ engineering_process_procedure_agent)
+- **Aviation MRO**: "What is the process of component robbing?"
+- **Aircraft maintenance**: "How do I perform a C-check inspection?"
+- **Engineering procedures**: "What are the regulatory requirements for engine overhaul?"
+- **RAG-powered responses**: Leverages Databricks serving endpoints with aviation knowledge
 
 #### General Conversation (→ general_chat_agent)
 - **General chat**: "How are you today?"
@@ -152,21 +190,21 @@ The master coordinator intelligently analyzes your request and routes it to the 
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                           AMOS Multi-Agent System                          │
+│                    MAGPIE Platform for Intelligent Execution               │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                          Master Coordinator                                │
 │                     (LLM-Driven Delegation)                                │
-├─────────────────┬─────────────────────────┬─────────────────────────────────┤
-│ Weather Time    │ Engineering Knowledge   │      General Chat Agent        │
-│     Agent       │    Agent [db]           │                                 │
-│ ┌─────────────┐ │ ┌─────────────────────┐ │ ┌─────────────────────────────┐ │
-│ │• Weather    │ │ │• Databricks Queries │ │ │• General Conversation       │ │
-│ │• Time Zones │ │ │• Engineering Data   │ │ │• Advice & Motivation        │ │
-│ │• City Info  │ │ │• Technical Docs     │ │ │• Creative Help              │ │
-│ └─────────────┘ │ │• RAG Models         │ │ │• Casual Chat                │ │
-│                 │ │• Service Principal  │ │ └─────────────────────────────┘ │
-│                 │ └─────────────────────┘ │                                 │
-└─────────────────┴─────────────────────────┴─────────────────────────────────┘
+├─────────────────────────────────┬───────────────────────────────────────────┤
+│ Engineering Process Procedure   │      General Chat Agent                  │
+│         Agent [db]              │                                           │
+│ ┌─────────────────────────────┐ │ ┌─────────────────────────────────────┐ │
+│ │• Databricks Queries         │ │ │• General Conversation               │ │
+│ │• Engineering Data           │ │ │• Advice & Motivation                │ │
+│ │• Technical Docs             │ │ │• Creative Help                      │ │
+│ │• RAG Models                 │ │ │• Casual Chat                        │ │
+│ │• Service Principal          │ │ └─────────────────────────────────────┘ │
+│ └─────────────────────────────┘ │                                           │
+└─────────────────────────────────┴───────────────────────────────────────────┘
                                       │
                     ┌──────────────┐  │  ┌─────────────────┐
                     │   LiteLLM    │──┼─▶│  Azure OpenAI   │
@@ -179,36 +217,49 @@ The master coordinator intelligently analyzes your request and routes it to the 
                                          └─────────────────┘
 ```
 
-## Agent Structure
+## Project Structure
 
 ```
-magpie-agent-adk/
-├── master_coordinator/          # Master orchestrator agent
+magpie-adk/
+├── master_coordinator/                    # Master orchestrator agent
 │   ├── __init__.py
 │   └── agent.py
-├── weather_time_agent/          # Weather & time specialist
+├── engineering_process_procedure_agent/   # Sequential agent for aviation MRO queries
+│   ├── __init__.py
+│   ├── agent.py
+│   ├── README.md
+│   └── sub_agents/
+│       ├── query_enhancement_agent/       # Query enhancement subagent
+│       │   ├── __init__.py
+│       │   └── agent.py
+│       └── databricks_query_agent/        # Databricks processing subagent
+│           ├── __init__.py
+│           └── agent.py
+├── general_chat_agent/                    # General conversation agent
 │   ├── __init__.py
 │   └── agent.py
-├── engineering_knowledge_agent/ # [db] Engineering knowledge specialist
+├── common/                                # Shared utilities
 │   ├── __init__.py
-│   └── agent.py
-├── general_chat_agent/          # General conversation agent
-│   ├── __init__.py
-│   └── agent.py
-├── multi_tool_agent/           # Legacy single agent (deprecated)
-├── .env                        # Environment configuration
-├── requirements.txt            # Python dependencies
-└── README.md                   # This file
+│   └── model_factory.py                  # Multi-model factory
+├── docs/                                  # Detailed documentation
+├── tests/                                 # Test scripts
+├── .env                                   # Environment configuration
+├── CONFIGURATION.md                       # Multi-model configuration guide
+├── requirements.txt                       # Python dependencies
+└── README.md                              # This file
 ```
 
 ## Key Components
 
 - **`master_coordinator/`**: Central orchestrator with intelligent routing
-- **`weather_time_agent/`**: Specialized weather and time information agent
-- **`engineering_knowledge_agent/`**: [db] Engineering knowledge specialist with Databricks integration
+- **`engineering_process_procedure_agent/`**: Sequential agent for aviation MRO queries with automatic enhancement and Databricks integration
 - **`general_chat_agent/`**: General conversation and advice agent
+- **`common/`**: Shared utilities including multi-model factory
+- **`docs/`**: Detailed implementation documentation
+- **`tests/`**: Test scripts and validation tools
 - **`requirements.txt`**: Python dependencies
 - **`.env`**: Environment configuration (includes Databricks credentials)
+- **`CONFIGURATION.md`**: Multi-model configuration guide
 
 ## Agent Transfer System
 
@@ -219,21 +270,38 @@ The system includes seamless agent-to-agent transfer capabilities:
 - **Context Preservation**: Transfers maintain conversation context and history
 
 ### Transfer Examples:
-- Weather agent → Engineering Knowledge agent (for technical questions)
-- Engineering Knowledge agent → Weather agent (for weather queries)
-- Any agent → General Chat agent (for casual conversation)
+- General Chat agent → Engineering Process Procedure agent (for aviation MRO and technical questions)
+- Engineering Process Procedure agent → General Chat agent (for casual conversation)
 
-## Databricks Integration
+## Engineering Process Procedure Agent Architecture
 
-The Engineering Knowledge Agent [db] provides:
+The Engineering Process Procedure Agent implements Google ADK's Sequential Agent pattern to address tool reuse limitations:
 
+### Architecture Overview
+- **Sequential Agent Pattern**: Addresses Google ADK limitation where multiple tools cannot be effectively reused within a single agent
+- **Two-Stage Pipeline**: Query Enhancement → Databricks Processing
+- **Transparent Enhancement**: Users receive better responses without seeing the enhancement process
+
+### Stage 1: Query Enhancement Subagent
+- **Purpose**: Transform user queries with aviation engineering and MRO-specific context
+- **Input**: Raw user query (e.g., "process of component robbing")
+- **Output**: Enhanced query with aviation terminology, regulatory references (FAA/EASA), and MRO best practices
+- **Function**: Acts as preprocessing layer that enriches queries with domain expertise
+
+### Stage 2: Databricks Query Subagent
+- **Purpose**: Process enhanced query and interface with Databricks LLM endpoint
+- **Input**: Enhanced query from Query Enhancement Subagent
+- **Output**: Contextually accurate response from aviation knowledge base
+- **Function**: Handles Databricks communication and response formatting
+
+### Technical Features
 - **Service Principal Authentication**: Secure access using Azure AD service principal
-- **RAG-Enabled Queries**: Leverages Databricks serving endpoints with engineering knowledge base
-- **OpenAI-Compatible API**: Uses familiar OpenAI client interface with Databricks backend
-- **Engineering Focus**: Specialized for technical documentation and engineering data queries
+- **RAG-Enabled Queries**: Leverages Databricks serving endpoints with aviation knowledge base
+- **State Management**: Proper data flow between stages via ADK's output_key mechanism
+- **Aviation Specialization**: Domain expertise in aircraft maintenance, regulatory compliance, and safety protocols
 
 ### Supported Model:
-- `agents_engineering-demo_rag_mabes-rag_mabes_advanced_v8_2`: Advanced RAG model for engineering queries
+- `agents_engineering-demo_rag_mabes-rag_mabes_advanced_v8_2`: Advanced RAG model for aviation engineering and MRO queries
 
 ## Customization
 
@@ -257,6 +325,18 @@ Enable LiteLLM debug mode in `.env`:
 ```env
 LITELLM_DEBUG=True
 ```
+
+## Documentation & Testing
+
+### Configuration
+- **[CONFIGURATION.md](CONFIGURATION.md)** - Multi-model configuration guide
+
+### Detailed Documentation
+- **[docs/](docs/)** - Implementation details, migration summaries, and technical documentation
+
+### Testing
+- **[tests/](tests/)** - Test scripts and validation tools
+- Run `python tests/validate_multi_model_config.py` to validate your configuration
 
 ## References
 

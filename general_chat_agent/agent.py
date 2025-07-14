@@ -1,8 +1,9 @@
 import os
 from google.adk.agents import LlmAgent
-from google.adk.models.lite_llm import LiteLlm
-from google.adk.tools import ToolContext
 from dotenv import load_dotenv
+
+# Import model factory for multi-model support
+from common.model_factory import create_model_for_agent
 
 # Load environment variables from .env file
 load_dotenv()
@@ -11,7 +12,6 @@ load_dotenv()
 AZURE_OPENAI_API_KEY = os.getenv("AZURE_OPENAI_API_KEY")
 AZURE_OPENAI_ENDPOINT = os.getenv("AZURE_OPENAI_ENDPOINT")
 AZURE_OPENAI_API_VERSION = os.getenv("AZURE_OPENAI_API_VERSION")
-AZURE_OPENAI_MODEL = os.getenv("AZURE_OPENAI_MODEL", "azure/gpt-4.1")
 
 # Set LiteLLM environment variables for Azure OpenAI
 # LiteLLM expects these specific variable names
@@ -62,50 +62,17 @@ def get_daily_motivation() -> dict:
         "message": "Remember, every day is a new opportunity to grow and achieve your goals!"
     }
 
-def transfer_to_weather_agent(tool_context: ToolContext) -> dict:
-    """Transfer the conversation to the weather and time specialist agent.
-
-    Args:
-        tool_context: The tool context for handling the transfer
+def transfer_to_engineering_process_procedure_agent() -> dict:
+    """Transfer the conversation to the Engineering Process Procedure Agent for technical queries.
 
     Returns:
         dict: Transfer confirmation
     """
-    try:
-        tool_context.actions.transfer_to_agent = "weather_time_agent"
-        return {
-            "status": "success",
-            "message": "Transferring to weather and time specialist agent for weather-related queries.",
-            "transferred_to": "weather_time_agent"
-        }
-    except Exception as e:
-        return {
-            "status": "error",
-            "message": f"Failed to transfer to weather agent: {str(e)}"
-        }
-
-
-def transfer_to_engineering_knowledge_agent(tool_context: ToolContext) -> dict:
-    """Transfer the conversation to the Engineering Knowledge Agent [db].
-
-    Args:
-        tool_context: The tool context for handling the transfer
-
-    Returns:
-        dict: Transfer confirmation
-    """
-    try:
-        tool_context.actions.transfer_to_agent = "engineering_knowledge_agent_db"
-        return {
-            "status": "success",
-            "message": "Transferring to Engineering Knowledge Agent [db] for technical and engineering queries.",
-            "transferred_to": "engineering_knowledge_agent_db"
-        }
-    except Exception as e:
-        return {
-            "status": "error",
-            "message": f"Failed to transfer to Engineering Knowledge Agent: {str(e)}"
-        }
+    return {
+        "status": "transfer_initiated",
+        "target_agent": "engineering_process_procedure_agent",
+        "message": "I'll transfer you to the Engineering Process Procedure Agent who specializes in technical and aviation engineering queries."
+    }
 
 
 def get_agent_capabilities() -> dict:
@@ -123,8 +90,7 @@ def get_agent_capabilities() -> dict:
             "Discussing current events, hobbies, and interests",
             "Helping with creative writing and brainstorming",
             "Providing general knowledge and explanations",
-            "Transfer to weather agent for weather-related queries",
-            "Transfer to Databricks agent for technical/engineering questions"
+            "Transfer to Engineering Process Procedure agent for technical/engineering questions"
         ],
         "description": (
             "I'm a general conversation agent powered by Azure OpenAI GPT-4.1 via LiteLLM. "
@@ -133,15 +99,14 @@ def get_agent_capabilities() -> dict:
             "I can also transfer conversations to specialist agents when needed."
         ),
         "transfer_capabilities": [
-            "weather_time_agent: For weather reports and time information",
-            "engineering_knowledge_agent_db: [db] For technical and engineering questions"
+            "engineering_process_procedure_agent: For technical and engineering questions"
         ]
     }
 
 # Create the general chat agent
 root_agent = LlmAgent(
     name="general_chat_agent",
-    model=LiteLlm(model=AZURE_OPENAI_MODEL),  # Using Azure OpenAI via LiteLLM
+    model=create_model_for_agent("general_chat_agent"),  # Using GPT-4.1-mini for cost-effective conversation
     description=(
         "Handles general conversational interactions, provides motivation, "
         "offers advice, and engages in friendly chat on various topics. "
@@ -155,12 +120,12 @@ root_agent = LlmAgent(
         "and simply chat about whatever the user is interested in. "
         "\n\n"
         "TRANSFER CAPABILITIES:\n"
-        "- If users ask about weather or time information, use 'transfer_to_weather_agent'\n"
-        "- If users ask technical or engineering questions, use 'transfer_to_engineering_knowledge_agent'\n"
+        "- If users ask technical or engineering questions, use 'transfer_to_engineering_process_procedure_agent'\n"
+        "- This will transfer to the Engineering Process Procedure Agent for aviation and technical queries\n"
         "- Only transfer when the query is clearly outside your general conversation expertise\n"
         "\n\n"
         "Always aim to be helpful, informative, and maintain a positive, friendly tone. "
         "For specialized topics, don't hesitate to transfer to the appropriate expert agent."
     ),
-    tools=[get_conversation_tips, get_daily_motivation, get_agent_capabilities, transfer_to_weather_agent, transfer_to_engineering_knowledge_agent],
+    tools=[get_conversation_tips, get_daily_motivation, get_agent_capabilities, transfer_to_engineering_process_procedure_agent],
 )

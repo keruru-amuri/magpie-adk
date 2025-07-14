@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Setup script for Google ADK with Azure OpenAI via LiteLLM
+Setup script for MAGPIE Platform with Google ADK and Azure OpenAI via LiteLLM
 """
 
 import os
@@ -24,7 +24,7 @@ def run_command(command, description):
 
 def main():
     """Main setup function."""
-    print("🚀 Setting up Google ADK with Azure OpenAI via LiteLLM")
+    print("🚀 Setting up MAGPIE Platform with Google ADK and Azure OpenAI via LiteLLM")
     
     # Check if .env exists
     if not Path(".env").exists():
