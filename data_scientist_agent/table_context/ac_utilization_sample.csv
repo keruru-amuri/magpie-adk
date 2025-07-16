@@ -1,0 +1,13 @@
+context_type,key,value,description
+business_context,description,"Aircraft utilization data from AMOS system showing flight hours and cycles",Main table description
+business_context,source_system,AMOS,Source system identifier
+business_context,update_frequency,Daily batch at 02:00 UTC,How often data is refreshed
+business_context,business_owner,maintenance_team@malaysiaairlines.com,Data owner contact
+field_mapping,ac_registr,Aircraft registration number (tail number),Format: 9M-XXX for Malaysia Airlines
+field_mapping,flight_hours,Total flight hours for the aircraft,Decimal hours includes taxi time
+field_mapping,flight_cycles,Number of takeoff/landing cycles,Integer count of flight cycles
+field_mapping,utilization_date,Date of utilization record,Date when utilization was recorded
+transformation,flight_date_int,YYYYMMDD integer format,Convert to date: CAST(CAST(flight_date_int AS STRING) AS DATE)
+transformation,hours_decimal,Hours in decimal format,May need rounding for reporting: ROUND(flight_hours 2)
+common_query,monthly_utilization,SELECT ac_registr SUM(flight_hours) as total_hours FROM {table} WHERE flight_date_int >= {start_date_int} GROUP BY ac_registr,Get monthly utilization by aircraft
+common_query,high_utilization_aircraft,SELECT ac_registr AVG(flight_hours) as avg_daily_hours FROM {table} WHERE flight_date_int >= {last_30_days} GROUP BY ac_registr HAVING avg_daily_hours > 8,Find aircraft with high daily utilization
