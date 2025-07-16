@@ -300,7 +300,9 @@ MAGPIE now includes a centralized Model Context Protocol (MCP) server infrastruc
 - **Job Management**: `list_jobs`, `get_job`, `run_job`
 - **SQL Operations**: `execute_sql`, `list_warehouses`
 
-For detailed information, see [`docs/CENTRALIZED_MCP_INFRASTRUCTURE.md`](docs/CENTRALIZED_MCP_INFRASTRUCTURE.md).
+For detailed information, see:
+- **[`docs/MCP_QUICK_START_GUIDE.md`](docs/MCP_QUICK_START_GUIDE.md)** - Quick start for new sessions
+- **[`docs/CENTRALIZED_MCP_INFRASTRUCTURE.md`](docs/CENTRALIZED_MCP_INFRASTRUCTURE.md)** - Complete architecture guide
 
 ## Agent Transfer System
 
