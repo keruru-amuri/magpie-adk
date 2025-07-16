@@ -1,0 +1,48 @@
+﻿Keys,Name,Type,MimeType,Show?,Cond,Value,Description,#
+,ext_system_leg_id,integer,INT,TRUE,---,,External key to uniquely identify this leg in the data delivering legacy system.,1
+,fn_suffix,varchar(1),ALPHANUM,TRUE,---,,Suffix which is appended to the usual flight number when it is delayed in order to help on distinction with regular flights.,2
+"[P,I,I]",legno_i,integer,LEG,TRUE,---,,AMOS-wide unique identifier for a leg,3
+"[I,I,I,I]",ac_registr,varchar(6),AC,TRUE,---,,Aircraft registration of the leg,4
+"[I,I]",validity,integer,DATE_INT,TRUE,---,,Real arrival date of the leg. This value is meant to be the landing / touchdown date of the leg (and not the on-block date of the leg),5
+"[I,I]",recno,integer,INT,TRUE,---,,"Continuous number to be able to sort the legs by aircraft and arrival_date. The value 0 means, that this leg is a so called ""null leg"" (the aircraft actually didn`t fly on that day). The value 1 means the first leg of that aircraft on that day, the value 2 the second leg of that aircraft on that day, etc.",6
+,null_leg_commited,integer,INT,TRUE,---,,"If the column ""recno"" has the value 0, then this column ""null_leg_commited"" describes, whether the ""null leg"" of the aircraft on that day is confirmed (then the TAH and TAC values of the aircraft can be updated) or is unconfirmed (i.e. there is still the possibility that leg data for that aircraft and day exists, but it`s not in the AMOS system yet and therefore, the TAH and TAC values of the aircraft can NOT be updated).",7
+,leg_number,varchar(8),ALPHANUM,TRUE,---,,"Flight number of the leg (carrier + number).
+
+The optional flight suffix is not part of the leg_number column and is always in the dedicated fn_suffix column.
+
+Please be aware that the fn_carrier and fn_number columns are only filled by interface and not for flights entered in APN 206 or APN 1573.",8
+,fn_carrier,varchar(3),ALPHANUM,TRUE,---,,"Operator part of the flight number of the leg.
+
+Please be aware that this column is only filled by interface and not for flights entered in APN 206 or APN 1573.",9
+,fn_number,integer,INT,TRUE,---,,"Number part of the flight number of the leg.
+
+Please be aware that this column is only filled by interface and not for flights entered in APN 206 or APN 1573.",10
+,service_type,varchar(1),ALPHANUM,TRUE,---,,"Standard code, which identifies the purpose of the leg, e.g. J = Service Normal; C = Charter; P = Ferry; T = Technical Test; K = Training",11
+[I],netline_leg_id,integer,INT,TRUE,---,,"Note: this database column is solely used by the AMOS ""Simulator"" modules (Flight Training companies). This means that for ""normal"" AMOS Customers operating or managing Aircraft / Helicopters, this DB column is not being filled anymore, effective with AMOS Stable V11.00.
+
+If you use a Netline System to import flight data: look in DB Table ""ac_util_netl_detail"", column ""netline_leg_id"" in case you want to retrieve the corresponding Netline-internal ID of a flight by matching the AMOS flight`s unique DB key ""ac_utilization.legno_i"" with ""ac_util_netl_detail.legno_i"".
+
+If you use some other FlightOPS system (e.g. AIMS, PDC.dk): look in DB Table ""leg_additional"", column ""ext_system_leg_id"" in case you want to retrieve the corresponding OPS System-internal ID of a flight (if that ID is provided at all, might be NULL if not supported by OPS System) by matching the AMOS flight`s unique DB key ""ac_utilization.legno_i"" with ""leg_additional.legno_i"".",12
+[I],departure_date,integer,DATE_INT,TRUE,---,,Departure date of the leg. This value is meant to be the airborne date of the leg (and not the off-block date of the leg),13
+,departure_time,integer,TIME,TRUE,---,,"Departure time of the leg, in minutes. This value is meant to be the airborne time of the leg (and not the off-block time of the leg)",14
+,departure,varchar(4),STA,TRUE,---,,The real departure airport of the leg,15
+[I],sched_departure_date,integer,DATE_INT,TRUE,---,,Scheduled departure date of the leg,16
+,sched_departure_time,integer,TIME,TRUE,---,,"Scheduled departure time of the leg, in minutes",17
+,sched_departure_airport,varchar(4),STA,TRUE,---,,Scheduled departure airport of the leg,18
+,arrival_time,integer,TIME,TRUE,---,,"Arrival time of the leg, in minutes. This value is meant to be the landing / touchdown time of the leg (and not the on-block time of the leg). Note: to work with the arrival date of the leg, use the column ""validity"" in this table.",19
+"[I,I]",arrival,varchar(4),STA,TRUE,---,,The real arrival airport of the leg,20
+[I],sched_arrival_date,integer,DATE_INT,TRUE,---,,Scheduled arrival date of the leg,21
+,sched_arrival_time,integer,TIME,TRUE,---,,"Scheduled arrival time of the leg, in minutes",22
+,sched_arrival_airport,varchar(4),STA,TRUE,---,,Scheduled arrival airport of the leg,23
+,daily_hours,float,TIME_AMO,TRUE,---,,"Duration of the leg, in minutes",24
+,daily_cycles,float,DOUBLE,TRUE,---,,Number of cycles for the leg (touchdowns),25
+"[I,I,I]",tah,integer,TIME_AMO,TRUE,---,,"Total aircraft hours for the aircraft after touchdown of the leg, in minutes",26
+"[I,I,I]",tac,integer,INT,TRUE,---,,Total aircraft cycles for the aircraft after touchdown of the leg,27
+,special_flight_type,varchar(2),ALPHANUM,TRUE,---,,"Similar to the column ""service_type"", but contains an additional AMOS internal standard code, which identifies the purpose of the leg, e.g. NL = null leg",28
+,mutation,integer,DATE,TRUE,---,,The mutation date of this record as AMOS date.,29
+,mutator,varchar(8),SG,TRUE,---,,The AMOS user who changed this record.,30
+,status,integer,INT,TRUE,---,,The status of the record. This column has a different meaning for every table.,31
+,mutation_time,integer,TIMI,TRUE,---,,The time when this record has been added or changed in milliseconds since the start of the day.,32
+,created_by,varchar(8),SG,TRUE,---,,The AMOS user who created this record.,33
+,created_date,integer,DATE,TRUE,---,,The creation date of this record as AMOS date.,34
+[I],uuid,varchar(36),ALPHANUM,TRUE,---,,Globally unique identifier.,35
