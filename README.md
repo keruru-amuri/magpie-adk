@@ -238,10 +238,27 @@ magpie-adk/
 ├── general_chat_agent/                    # General conversation agent
 │   ├── __init__.py
 │   └── agent.py
+├── mcp_servers/                           # Centralized MCP servers
+│   └── databricks/                        # Databricks MCP server
+│       ├── __init__.py
+│       ├── config.py                      # Service principal configuration
+│       ├── auth.py                        # Azure AD authentication
+│       ├── server.py                      # Main MCP server
+│       ├── start_server.py                # Startup script
+│       ├── test_server.py                 # Test suite
+│       ├── requirements.txt               # MCP server dependencies
+│       ├── README.md                      # Server documentation
+│       └── api/                           # API client modules
+│           ├── __init__.py
+│           ├── base.py                    # Base API client
+│           ├── clusters.py                # Clusters API
+│           ├── jobs.py                    # Jobs API
+│           └── sql.py                     # SQL API
 ├── common/                                # Shared utilities
 │   ├── __init__.py
 │   └── model_factory.py                  # Multi-model factory
 ├── docs/                                  # Detailed documentation
+│   └── CENTRALIZED_MCP_INFRASTRUCTURE.md  # MCP infrastructure guide
 ├── tests/                                 # Test scripts
 ├── .env                                   # Environment configuration
 ├── CONFIGURATION.md                       # Multi-model configuration guide
@@ -254,12 +271,36 @@ magpie-adk/
 - **`master_coordinator/`**: Central orchestrator with intelligent routing
 - **`engineering_process_procedure_agent/`**: Sequential agent for aviation MRO queries with automatic enhancement and Databricks integration
 - **`general_chat_agent/`**: General conversation and advice agent
+- **`mcp_servers/`**: Centralized Model Context Protocol servers for external service integration
+  - **`databricks/`**: Databricks MCP server with Azure service principal authentication
 - **`common/`**: Shared utilities including multi-model factory
-- **`docs/`**: Detailed implementation documentation
+- **`docs/`**: Detailed implementation documentation including MCP infrastructure guide
 - **`tests/`**: Test scripts and validation tools
-- **`requirements.txt`**: Python dependencies
+- **`requirements.txt`**: Python dependencies including MCP support
 - **`.env`**: Environment configuration (includes Databricks credentials)
 - **`CONFIGURATION.md`**: Multi-model configuration guide
+
+## Centralized MCP Server Infrastructure
+
+MAGPIE now includes a centralized Model Context Protocol (MCP) server infrastructure that provides agent-agnostic access to external services:
+
+### Architecture Benefits
+- **Agent-Agnostic Design**: Multiple agents can consume the same MCP servers
+- **Centralized Authentication**: Service credentials managed in one place
+- **Scalability**: Easy to add new MCP servers for additional services
+- **Maintainability**: Clear separation between platform and external services
+
+### Databricks MCP Server
+- **Service Principal Authentication**: Uses Azure AD instead of Personal Access Tokens
+- **Comprehensive API Coverage**: Clusters, jobs, SQL, notebooks, and more
+- **Multi-Agent Consumption**: Can be used by engineering, data science, and future agents
+
+### Available Tools
+- **Cluster Management**: `list_clusters`, `create_cluster`, `start_cluster`, `terminate_cluster`
+- **Job Management**: `list_jobs`, `get_job`, `run_job`
+- **SQL Operations**: `execute_sql`, `list_warehouses`
+
+For detailed information, see [`docs/CENTRALIZED_MCP_INFRASTRUCTURE.md`](docs/CENTRALIZED_MCP_INFRASTRUCTURE.md).
 
 ## Agent Transfer System
 
