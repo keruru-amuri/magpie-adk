@@ -22,6 +22,7 @@ class ModelFactory:
         'master_coordinator': 'MASTER_COORDINATOR_MODEL',
         'engineering_process_procedure_agent': 'ENGINEERING_PROCESS_AGENT_MODEL',
         'general_chat_agent': 'GENERAL_CHAT_AGENT_MODEL',
+        'data_scientist_agent': 'DATA_SCIENTIST_AGENT_MODEL',
         'query_enhancement_agent': 'QUERY_ENHANCEMENT_AGENT_MODEL',
         'databricks_query_agent': 'DATABRICKS_QUERY_AGENT_MODEL',
         # Aliases for backward compatibility
