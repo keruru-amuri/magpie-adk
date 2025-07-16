@@ -13,7 +13,11 @@ from dotenv import load_dotenv
 from common.model_factory import create_model_for_agent
 
 # Import MCP client tools
-from .mcp_client import list_clusters_sync, get_cluster_sync, execute_sql_sync
+from .mcp_client import (
+    list_clusters_sync, get_cluster_sync, execute_sql_sync,
+    start_cluster_sync, terminate_cluster_sync, list_warehouses_sync,
+    list_jobs_sync, get_job_sync, run_job_sync
+)
 
 # Load environment variables from .env file
 load_dotenv()
@@ -51,13 +55,15 @@ def get_data_science_capabilities() -> dict:
             "server": "Databricks MCP Server",
             "authentication": "Azure Service Principal",
             "available_tools": [
-                "execute_sql - Execute SQL statements for data analysis",
-                "list_clusters - View available computational resources",
-                "get_cluster - Get detailed cluster information",
-                "start_cluster - Start clusters for data processing",
-                "list_jobs - View available data processing jobs",
-                "run_job - Execute data processing workflows",
-                "list_warehouses - View available SQL warehouses"
+                "execute_sql_sync - Execute SQL statements for data analysis",
+                "list_clusters_sync - View available computational resources",
+                "get_cluster_sync - Get detailed cluster information",
+                "start_cluster_sync - Start terminated clusters for data processing",
+                "terminate_cluster_sync - Stop running clusters to save resources",
+                "list_warehouses_sync - View available SQL warehouses",
+                "list_jobs_sync - View available data processing jobs",
+                "get_job_sync - Get detailed job information",
+                "run_job_sync - Execute data processing workflows"
             ]
         },
         "use_cases": [
@@ -135,24 +141,46 @@ Your primary capabilities include:
 4. **Business Intelligence**: Provide insights and recommendations based on data
 
 You have access to Databricks through a centralized MCP server with the following tools:
+
+**Cluster Management:**
 - list_clusters_sync: View available computational clusters
 - get_cluster_sync: Get detailed information about specific clusters
+- start_cluster_sync: Start terminated clusters for data processing
+- terminate_cluster_sync: Stop running clusters to save resources
+
+**Data Analysis:**
 - execute_sql_sync: Run SQL queries for data analysis
+- list_warehouses_sync: View available SQL warehouses
+
+**Job Management:**
+- list_jobs_sync: View available data processing jobs
+- get_job_sync: Get detailed job information
+- run_job_sync: Execute data processing workflows
 
 When users ask for data analysis:
 1. First understand what they want to analyze
-2. Use appropriate SQL queries to extract insights
-3. Explain your findings in clear, business-friendly language
-4. Suggest follow-up analyses when relevant
+2. Check if appropriate clusters are running (use list_clusters_sync)
+3. Start clusters if needed (use start_cluster_sync)
+4. Use appropriate SQL queries to extract insights
+5. Explain your findings in clear, business-friendly language
+6. Suggest follow-up analyses when relevant
 
 For cluster management:
-1. Check cluster availability before running intensive queries
-2. Start clusters when needed for better performance
+1. Always check cluster status before running intensive queries
+2. Start clusters when needed for better performance (use start_cluster_sync)
 3. Provide status updates on cluster operations
+4. Help users manage computational resources efficiently
 
 Always prioritize data accuracy and provide context for your analyses.
 Be helpful in explaining technical concepts in accessible terms.""",
-        tools=[list_clusters_sync, get_cluster_sync, execute_sql_sync]
+        tools=[
+            # Cluster management tools
+            list_clusters_sync, get_cluster_sync, start_cluster_sync, terminate_cluster_sync,
+            # Data analysis tools
+            execute_sql_sync, list_warehouses_sync,
+            # Job management tools
+            list_jobs_sync, get_job_sync, run_job_sync
+        ]
     )
     
     print(f"✅ Data Scientist Agent created successfully using model: {model}")

@@ -268,3 +268,93 @@ def execute_sql_sync(statement: str, warehouse_id: Optional[str] = None) -> Dict
             return asyncio.run(execute_sql(statement, warehouse_id))
     except Exception as e:
         return {"status": "error", "error": str(e)}
+
+
+def start_cluster_sync(cluster_id: str) -> Dict[str, Any]:
+    """Synchronous wrapper for start_cluster."""
+    try:
+        try:
+            loop = asyncio.get_running_loop()
+            import concurrent.futures
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                future = executor.submit(asyncio.run, start_cluster(cluster_id))
+                return future.result()
+        except RuntimeError:
+            return asyncio.run(start_cluster(cluster_id))
+    except Exception as e:
+        return {"status": "error", "error": str(e)}
+
+
+def terminate_cluster_sync(cluster_id: str) -> Dict[str, Any]:
+    """Synchronous wrapper for terminate_cluster."""
+    try:
+        try:
+            loop = asyncio.get_running_loop()
+            import concurrent.futures
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                future = executor.submit(asyncio.run, terminate_cluster(cluster_id))
+                return future.result()
+        except RuntimeError:
+            return asyncio.run(terminate_cluster(cluster_id))
+    except Exception as e:
+        return {"status": "error", "error": str(e)}
+
+
+def list_warehouses_sync() -> Dict[str, Any]:
+    """Synchronous wrapper for list_warehouses."""
+    try:
+        try:
+            loop = asyncio.get_running_loop()
+            import concurrent.futures
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                future = executor.submit(asyncio.run, list_warehouses())
+                return future.result()
+        except RuntimeError:
+            return asyncio.run(list_warehouses())
+    except Exception as e:
+        return {"status": "error", "error": str(e)}
+
+
+def list_jobs_sync() -> Dict[str, Any]:
+    """Synchronous wrapper for list_jobs."""
+    try:
+        try:
+            loop = asyncio.get_running_loop()
+            import concurrent.futures
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                future = executor.submit(asyncio.run, list_jobs())
+                return future.result()
+        except RuntimeError:
+            return asyncio.run(list_jobs())
+    except Exception as e:
+        return {"status": "error", "error": str(e)}
+
+
+def get_job_sync(job_id: str) -> Dict[str, Any]:
+    """Synchronous wrapper for get_job."""
+    try:
+        try:
+            loop = asyncio.get_running_loop()
+            import concurrent.futures
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                future = executor.submit(asyncio.run, get_job(job_id))
+                return future.result()
+        except RuntimeError:
+            return asyncio.run(get_job(job_id))
+    except Exception as e:
+        return {"status": "error", "error": str(e)}
+
+
+def run_job_sync(job_id: str) -> Dict[str, Any]:
+    """Synchronous wrapper for run_job."""
+    try:
+        try:
+            loop = asyncio.get_running_loop()
+            import concurrent.futures
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                future = executor.submit(asyncio.run, run_job(job_id))
+                return future.result()
+        except RuntimeError:
+            return asyncio.run(run_job(job_id))
+    except Exception as e:
+        return {"status": "error", "error": str(e)}
