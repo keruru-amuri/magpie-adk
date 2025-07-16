@@ -9,8 +9,8 @@ import asyncio
 import logging
 from typing import Any, Dict, Optional
 import aiohttp
-from ..auth import get_authenticated_headers
-from ..config import get_databricks_api_url
+from mcp_servers.databricks.auth import get_authenticated_headers
+from mcp_servers.databricks.config import get_databricks_api_url
 
 logger = logging.getLogger(__name__)
 

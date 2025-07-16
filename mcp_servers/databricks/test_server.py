@@ -18,9 +18,9 @@ sys.path.insert(0, str(current_dir))
 async def test_configuration():
     """Test configuration loading and validation."""
     print("Testing configuration...")
-    
+
     try:
-        from config import settings
+        from mcp_servers.databricks.config import settings
         print(f"✓ Configuration loaded successfully")
         print(f"  - Workspace URL: {settings.DATABRICKS_WORKSPACE_URL}")
         print(f"  - Client ID: {settings.DATABRICKS_CLIENT_ID[:8]}...")
@@ -33,9 +33,9 @@ async def test_configuration():
 async def test_authentication():
     """Test Azure AD authentication."""
     print("\nTesting authentication...")
-    
+
     try:
-        from auth import auth
+        from mcp_servers.databricks.auth import auth
         token = await auth.get_access_token()
         print(f"✓ Authentication successful")
         print(f"  - Token acquired: {token[:20]}...")
@@ -47,15 +47,15 @@ async def test_authentication():
 async def test_api_clients():
     """Test API client initialization."""
     print("\nTesting API clients...")
-    
+
     try:
-        from api.clusters import clusters_client
-        from api.sql import sql_client
-        from api.jobs import jobs_client
-        
+        from mcp_servers.databricks.api.clusters import clusters_client
+        from mcp_servers.databricks.api.sql import sql_client
+        from mcp_servers.databricks.api.jobs import jobs_client
+
         print("✓ API clients initialized successfully")
         print("  - Clusters client: Ready")
-        print("  - SQL client: Ready") 
+        print("  - SQL client: Ready")
         print("  - Jobs client: Ready")
         return True
     except Exception as e:
@@ -65,9 +65,9 @@ async def test_api_clients():
 async def test_basic_api_call():
     """Test a basic API call (list clusters)."""
     print("\nTesting basic API call...")
-    
+
     try:
-        from api.clusters import clusters_client
+        from mcp_servers.databricks.api.clusters import clusters_client
         result = await clusters_client.list_clusters()
         print("✓ Basic API call successful")
         print(f"  - Response received: {type(result)}")
@@ -80,13 +80,13 @@ async def test_basic_api_call():
 async def test_server_initialization():
     """Test MCP server initialization."""
     print("\nTesting MCP server initialization...")
-    
+
     try:
-        from server import DatabricksMCPServer
+        from mcp_servers.databricks.server import DatabricksMCPServer
         server = DatabricksMCPServer()
         print("✓ MCP server initialized successfully")
         print(f"  - Server name: {server.name}")
-        print(f"  - Server version: {server.version}")
+        print(f"  - Server type: {type(server).__name__}")
         return True
     except Exception as e:
         print(f"✗ MCP server initialization failed: {e}")

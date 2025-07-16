@@ -8,7 +8,7 @@ creating, running, monitoring, and managing job executions.
 import logging
 import asyncio
 from typing import Any, Dict, List, Optional
-from .base import BaseDatabricksClient
+from mcp_servers.databricks.api.base import BaseDatabricksClient
 
 logger = logging.getLogger(__name__)
 

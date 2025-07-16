@@ -7,7 +7,7 @@ listing, creating, starting, stopping, and terminating clusters.
 
 import logging
 from typing import Any, Dict, List, Optional
-from .base import BaseDatabricksClient
+from mcp_servers.databricks.api.base import BaseDatabricksClient
 
 logger = logging.getLogger(__name__)
 

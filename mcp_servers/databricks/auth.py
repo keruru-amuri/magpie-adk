@@ -10,7 +10,7 @@ import logging
 import time
 from typing import Dict, Optional
 import aiohttp
-from .config import settings
+from mcp_servers.databricks.config import settings
 
 logger = logging.getLogger(__name__)
 

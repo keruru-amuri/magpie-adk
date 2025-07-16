@@ -18,10 +18,10 @@ from mcp.types import TextContent
 from mcp.server.stdio import stdio_server
 
 # Import API clients
-from .api.clusters import clusters_client
-from .api.sql import sql_client
-from .api.jobs import jobs_client
-from .config import settings
+from mcp_servers.databricks.api.clusters import clusters_client
+from mcp_servers.databricks.api.sql import sql_client
+from mcp_servers.databricks.api.jobs import jobs_client
+from mcp_servers.databricks.config import settings
 
 # Configure logging
 logging.basicConfig(

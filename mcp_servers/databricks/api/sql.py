@@ -8,8 +8,8 @@ SQL warehouses in Databricks.
 import logging
 import asyncio
 from typing import Any, Dict, List, Optional
-from .base import BaseDatabricksClient
-from ..config import settings
+from mcp_servers.databricks.api.base import BaseDatabricksClient
+from mcp_servers.databricks.config import settings
 
 logger = logging.getLogger(__name__)
 
