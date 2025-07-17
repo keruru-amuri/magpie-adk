@@ -21,6 +21,28 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
+def safe_json_loads(json_str: str, default=None) -> Any:
+    """Safely parse JSON string with fallback."""
+    try:
+        return json.loads(json_str)
+    except (json.JSONDecodeError, TypeError, ValueError) as e:
+        logger.warning(f"Failed to parse JSON: {e}. String: {json_str[:100]}...")
+        return default if default is not None else {}
+
+
+def sanitize_for_json(data: Any) -> Any:
+    """Sanitize data to ensure it can be safely serialized to JSON."""
+    if isinstance(data, dict):
+        return {k: sanitize_for_json(v) for k, v in data.items()}
+    elif isinstance(data, list):
+        return [sanitize_for_json(item) for item in data]
+    elif isinstance(data, str):
+        # Remove or replace problematic characters
+        return data.replace('\x00', '').replace('\b', '').replace('\f', '').replace('\v', '')
+    else:
+        return data
+
+
 class DatabricksMCPClient:
     """Client for communicating with the Databricks MCP server."""
 
@@ -726,11 +748,21 @@ async def set_table_context(table_name: str, context_data: Dict[str, Any]) -> Di
     """Set table context metadata using Unity Catalog properties and column comments."""
     import json
 
-    # Prepare JSON strings for table properties
-    business_context = json.dumps(context_data.get("business_context", {}))
-    field_mappings = json.dumps(context_data.get("field_mappings", {}))
-    transformations = json.dumps(context_data.get("transformations", {}))
-    common_queries = json.dumps(context_data.get("common_queries", []))
+    # Prepare JSON strings for table properties with error handling and sanitization
+    try:
+        # Sanitize data before JSON serialization
+        sanitized_business_context = sanitize_for_json(context_data.get("business_context", {}))
+        sanitized_field_mappings = sanitize_for_json(context_data.get("field_mappings", {}))
+        sanitized_transformations = sanitize_for_json(context_data.get("transformations", {}))
+        sanitized_common_queries = sanitize_for_json(context_data.get("common_queries", []))
+
+        business_context = json.dumps(sanitized_business_context, ensure_ascii=False)
+        field_mappings = json.dumps(sanitized_field_mappings, ensure_ascii=False)
+        transformations = json.dumps(sanitized_transformations, ensure_ascii=False)
+        common_queries = json.dumps(sanitized_common_queries, ensure_ascii=False)
+    except (TypeError, ValueError) as e:
+        logger.error(f"Error serializing context data to JSON: {e}")
+        return {"status": "error", "error": f"Invalid context data format: {str(e)}"}
 
     # Log JSON sizes for debugging
     logger.debug(f"JSON sizes - business_context: {len(business_context)}, field_mappings: {len(field_mappings)}, transformations: {len(transformations)}")
@@ -748,11 +780,23 @@ async def set_table_context(table_name: str, context_data: Dict[str, Any]) -> Di
         field_mappings = json.dumps(truncated_mappings)
         logger.info(f"Truncated field mappings to {len(field_mappings)} chars")
 
-    # Escape single quotes for SQL
-    business_context = business_context.replace("'", "''")
-    field_mappings = field_mappings.replace("'", "''")
-    transformations = transformations.replace("'", "''")
-    common_queries = common_queries.replace("'", "''")
+    # Safely escape strings for SQL with comprehensive sanitization
+    def safe_sql_escape(text: str) -> str:
+        """Safely escape text for SQL string literals."""
+        if not text:
+            return ""
+        # Replace problematic characters
+        text = text.replace("'", "''")  # Escape single quotes
+        text = text.replace("\\", "\\\\")  # Escape backslashes
+        text = text.replace("\n", "\\n")  # Escape newlines
+        text = text.replace("\r", "\\r")  # Escape carriage returns
+        text = text.replace("\t", "\\t")  # Escape tabs
+        return text
+
+    business_context = safe_sql_escape(business_context)
+    field_mappings = safe_sql_escape(field_mappings)
+    transformations = safe_sql_escape(transformations)
+    common_queries = safe_sql_escape(common_queries)
 
     # Set table properties
     table_props_sql = f"""
@@ -793,8 +837,18 @@ async def set_table_context(table_name: str, context_data: Dict[str, Any]) -> Di
             comment += f" | {notes}"
 
         if comment:
-            # Escape single quotes for SQL
-            comment = comment.replace("'", "''")
+            # Sanitize comment for SQL - escape quotes and remove problematic characters
+            comment = comment.replace("'", "''")  # Escape single quotes
+            comment = comment.replace('"', '""')  # Escape double quotes
+            comment = comment.replace('\n', ' ')  # Replace newlines with spaces
+            comment = comment.replace('\r', ' ')  # Replace carriage returns
+            comment = comment.replace('\t', ' ')  # Replace tabs with spaces
+            comment = comment.strip()  # Remove leading/trailing whitespace
+
+            # Limit comment length to prevent issues
+            if len(comment) > 500:
+                comment = comment[:497] + "..."
+                logger.warning(f"Truncated comment for column {field_name} to 500 characters")
 
             column_comment_sql = f"""
             ALTER TABLE {table_name}
@@ -937,18 +991,36 @@ def get_table_metadata_sync(table_name: str) -> Dict[str, Any]:
 
 
 def set_table_context_sync(table_name: str, context_data: Dict[str, Any]) -> Dict[str, Any]:
-    """Synchronous wrapper for set_table_context."""
+    """Synchronous wrapper for set_table_context with enhanced error handling."""
     try:
+        # Import error handling utilities
+        from .error_handlers import validate_table_context_data, create_user_friendly_error_message
+
+        # Validate and sanitize context data
+        sanitized_context = validate_table_context_data(context_data)
+
         try:
             loop = asyncio.get_running_loop()
             import concurrent.futures
             with concurrent.futures.ThreadPoolExecutor() as executor:
-                future = executor.submit(asyncio.run, set_table_context(table_name, context_data))
+                future = executor.submit(asyncio.run, set_table_context(table_name, sanitized_context))
                 return future.result()
         except RuntimeError:
-            return asyncio.run(set_table_context(table_name, context_data))
+            return asyncio.run(set_table_context(table_name, sanitized_context))
+    except json.JSONDecodeError as e:
+        logger.error(f"JSON parsing error in set_table_context_sync: {e}")
+        return {
+            "status": "error",
+            "error": "There was an issue with special characters in your descriptions. Please use simpler descriptions without quotes or special characters."
+        }
     except Exception as e:
-        return {"status": "error", "error": str(e)}
+        logger.error(f"Error in set_table_context_sync: {e}")
+        try:
+            from .error_handlers import create_user_friendly_error_message
+            error_msg = create_user_friendly_error_message(e)
+        except:
+            error_msg = str(e)
+        return {"status": "error", "error": error_msg}
 
 
 def read_csv_content_sync(csv_path: str) -> Dict[str, Any]:
