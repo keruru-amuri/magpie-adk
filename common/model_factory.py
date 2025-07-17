@@ -42,25 +42,62 @@ class ModelFactory:
     def create_model(cls, agent_name: str, **kwargs) -> LiteLlm:
         """
         Create a model instance for the specified agent.
-        
+
         Args:
             agent_name: Name of the agent requesting the model
             **kwargs: Additional parameters for model configuration
-            
+
         Returns:
             LiteLlm: Configured model instance
         """
         model_string = cls._get_model_for_agent(agent_name)
-        
+
+        # Apply model-specific configurations
+        model_kwargs = cls._get_model_specific_config(model_string)
+        model_kwargs.update(kwargs)  # User-provided kwargs take precedence
+
         # Create LiteLlm instance with the determined model
-        model_instance = LiteLlm(model=model_string, **kwargs)
-        
+        model_instance = LiteLlm(model=model_string, **model_kwargs)
+
         # Log model selection for debugging
         if os.getenv('AGENT_LOG_LEVEL', 'INFO') in ['DEBUG', 'INFO']:
             print(f"🤖 Agent '{agent_name}' using model: {model_string}")
-        
+            if 'DeepSeek' in model_string:
+                print(f"   ⚙️ DeepSeek config: timeout={model_kwargs.get('timeout', 'default')}, max_tokens={model_kwargs.get('max_tokens', 'default')}")
+
         return model_instance
-    
+
+    @classmethod
+    def _get_model_specific_config(cls, model_string: str) -> Dict[str, Any]:
+        """
+        Get model-specific configuration parameters.
+
+        Args:
+            model_string: The model string (e.g., 'azure/DeepSeek-R1-0528')
+
+        Returns:
+            Dict[str, Any]: Model-specific configuration parameters
+        """
+        config = {}
+
+        # DeepSeek-specific configurations
+        if 'DeepSeek' in model_string:
+            # Longer timeout for DeepSeek as it can be slower
+            config['timeout'] = int(os.getenv('DEEPSEEK_TIMEOUT', '180'))
+            config['max_tokens'] = int(os.getenv('DEEPSEEK_MAX_TOKENS', '4000'))
+            config['temperature'] = float(os.getenv('DEFAULT_TEMPERATURE', '0.2'))
+
+            # Add retry configuration for DeepSeek
+            config['max_retries'] = int(os.getenv('LITELLM_MAX_RETRIES', '3'))
+
+        else:
+            # Standard configuration for other models
+            config['timeout'] = int(os.getenv('LITELLM_REQUEST_TIMEOUT', '60'))
+            config['max_tokens'] = int(os.getenv('DEFAULT_MAX_TOKENS', '1000'))
+            config['temperature'] = float(os.getenv('DEFAULT_TEMPERATURE', '0.2'))
+
+        return config
+
     @classmethod
     def _get_model_for_agent(cls, agent_name: str) -> str:
         """

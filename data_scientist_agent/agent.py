@@ -33,6 +33,11 @@ os.environ["AZURE_API_KEY"] = AZURE_OPENAI_API_KEY
 os.environ["AZURE_API_BASE"] = AZURE_OPENAI_ENDPOINT
 os.environ["AZURE_API_VERSION"] = AZURE_OPENAI_API_VERSION
 
+# Set LiteLLM timeout and retry configurations
+os.environ["LITELLM_REQUEST_TIMEOUT"] = os.getenv("LITELLM_REQUEST_TIMEOUT", "120")
+os.environ["LITELLM_MAX_RETRIES"] = os.getenv("LITELLM_MAX_RETRIES", "3")
+os.environ["LITELLM_RETRY_DELAY"] = os.getenv("LITELLM_RETRY_DELAY", "2")
+
 
 def get_data_science_capabilities() -> dict:
     """Returns information about the Data Scientist Agent's capabilities.
