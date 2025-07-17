@@ -180,7 +180,114 @@ class DatabricksMCPClient:
                     return {"status": "error", "error": "job_id is required"}
                 result = await jobs_client.run_job(job_id)
                 return {"status": "success", "data": result}
-                
+
+            # Notebook management tools
+            elif tool_name == "list_notebooks":
+                from mcp_servers.databricks.api.notebooks import NotebooksClient
+                notebooks_client = NotebooksClient()
+                try:
+                    path = params.get("path", "/") if params else "/"
+                    object_type = params.get("object_type") if params else None
+                    result = await notebooks_client.list_workspace_objects(path, object_type)
+                    return {"status": "success", "data": result}
+                finally:
+                    await self._cleanup_sessions(notebooks_client)
+
+            elif tool_name == "get_notebook_info":
+                from mcp_servers.databricks.api.notebooks import NotebooksClient
+                notebooks_client = NotebooksClient()
+                path = params.get("path") if params else None
+                if not path:
+                    return {"status": "error", "error": "path is required"}
+                try:
+                    result = await notebooks_client.get_notebook_status(path)
+                    return {"status": "success", "data": result}
+                finally:
+                    await self._cleanup_sessions(notebooks_client)
+
+            elif tool_name == "export_notebook":
+                from mcp_servers.databricks.api.notebooks import NotebooksClient
+                notebooks_client = NotebooksClient()
+                path = params.get("path") if params else None
+                if not path:
+                    return {"status": "error", "error": "path is required"}
+                try:
+                    format_type = params.get("format", "SOURCE") if params else "SOURCE"
+                    direct_download = params.get("direct_download", False) if params else False
+                    result = await notebooks_client.export_notebook(path, format_type, direct_download)
+                    return {"status": "success", "data": result}
+                finally:
+                    await self._cleanup_sessions(notebooks_client)
+
+            elif tool_name == "create_notebook":
+                from mcp_servers.databricks.api.notebooks import NotebooksClient
+                notebooks_client = NotebooksClient()
+                path = params.get("path") if params else None
+                if not path:
+                    return {"status": "error", "error": "path is required"}
+                try:
+                    language = params.get("language", "PYTHON") if params else "PYTHON"
+                    content = params.get("content") if params else None
+                    result = await notebooks_client.create_notebook(path, language, content)
+                    return {"status": "success", "data": result}
+                finally:
+                    await self._cleanup_sessions(notebooks_client)
+
+            elif tool_name == "import_notebook":
+                from mcp_servers.databricks.api.notebooks import NotebooksClient
+                notebooks_client = NotebooksClient()
+                path = params.get("path") if params else None
+                content = params.get("content") if params else None
+                if not path or not content:
+                    return {"status": "error", "error": "path and content are required"}
+                try:
+                    format_type = params.get("format", "AUTO") if params else "AUTO"
+                    language = params.get("language") if params else None
+                    overwrite = params.get("overwrite", False) if params else False
+                    result = await notebooks_client.import_notebook(path, content, format_type, language, overwrite)
+                    return {"status": "success", "data": result}
+                finally:
+                    await self._cleanup_sessions(notebooks_client)
+
+            elif tool_name == "delete_notebook":
+                from mcp_servers.databricks.api.notebooks import NotebooksClient
+                notebooks_client = NotebooksClient()
+                path = params.get("path") if params else None
+                if not path:
+                    return {"status": "error", "error": "path is required"}
+                try:
+                    recursive = params.get("recursive", False) if params else False
+                    result = await notebooks_client.delete_notebook(path, recursive)
+                    return {"status": "success", "data": result}
+                finally:
+                    await self._cleanup_sessions(notebooks_client)
+
+            elif tool_name == "create_directory":
+                from mcp_servers.databricks.api.notebooks import NotebooksClient
+                notebooks_client = NotebooksClient()
+                path = params.get("path") if params else None
+                if not path:
+                    return {"status": "error", "error": "path is required"}
+                try:
+                    result = await notebooks_client.create_directory(path)
+                    return {"status": "success", "data": result}
+                finally:
+                    await self._cleanup_sessions(notebooks_client)
+
+            elif tool_name == "search_notebooks":
+                from mcp_servers.databricks.api.notebooks import NotebooksClient
+                notebooks_client = NotebooksClient()
+                query = params.get("query") if params else None
+                if not query:
+                    return {"status": "error", "error": "query is required"}
+                try:
+                    max_results = params.get("max_results", 25) if params else 25
+                    path_prefix = params.get("path_prefix") if params else None
+                    result = await notebooks_client.search_notebooks(query, max_results, path_prefix)
+                    return {"status": "success", "data": result}
+                finally:
+                    await self._cleanup_sessions(notebooks_client)
+
             else:
                 return {"status": "error", "error": f"Unknown tool: {tool_name}"}
                 
@@ -272,6 +379,160 @@ async def get_job(job_id: str) -> Dict[str, Any]:
 async def run_job(job_id: str) -> Dict[str, Any]:
     """Run a specific job."""
     result = await mcp_client._call_mcp_tool("run_job", {"job_id": job_id})
+    return result
+
+
+# Notebook Management Tools
+async def list_notebooks(path: str = "/", object_type: Optional[str] = None) -> Dict[str, Any]:
+    """List notebooks and directories in workspace.
+
+    Args:
+        path: Workspace path to list (default: root "/")
+        object_type: Filter by object type (NOTEBOOK, DIRECTORY, FILE)
+
+    Returns:
+        Dictionary containing list of workspace objects
+    """
+    params = {"path": path}
+    if object_type:
+        params["object_type"] = object_type
+
+    result = await mcp_client._call_mcp_tool("list_notebooks", params)
+    return result
+
+
+async def get_notebook_info(path: str) -> Dict[str, Any]:
+    """Get metadata about a notebook or workspace object.
+
+    Args:
+        path: Full workspace path to the object
+
+    Returns:
+        Dictionary containing object metadata
+    """
+    result = await mcp_client._call_mcp_tool("get_notebook_info", {"path": path})
+    return result
+
+
+async def export_notebook(path: str, format: str = "SOURCE", direct_download: bool = False) -> Dict[str, Any]:
+    """Export a notebook from the workspace.
+
+    Args:
+        path: Full workspace path to the notebook
+        format: Export format (SOURCE, HTML, JUPYTER, DBC, AUTO)
+        direct_download: If True, return content directly; if False, return base64 encoded
+
+    Returns:
+        Dictionary containing exported notebook content
+    """
+    params = {
+        "path": path,
+        "format": format,
+        "direct_download": direct_download
+    }
+    result = await mcp_client._call_mcp_tool("export_notebook", params)
+    return result
+
+
+async def create_notebook(path: str, language: str = "PYTHON", content: Optional[str] = None) -> Dict[str, Any]:
+    """Create a new notebook in the workspace.
+
+    Args:
+        path: Target workspace path for the new notebook
+        language: Programming language (PYTHON, SQL, SCALA, R)
+        content: Initial notebook content (optional)
+
+    Returns:
+        Dictionary containing creation result
+    """
+    params = {
+        "path": path,
+        "language": language
+    }
+    if content:
+        params["content"] = content
+
+    result = await mcp_client._call_mcp_tool("create_notebook", params)
+    return result
+
+
+async def import_notebook(path: str, content: str, format: str = "AUTO",
+                         language: Optional[str] = None, overwrite: bool = False) -> Dict[str, Any]:
+    """Import a notebook to the workspace.
+
+    Args:
+        path: Target workspace path for the notebook
+        content: Base64 encoded notebook content
+        format: Import format (SOURCE, HTML, JUPYTER, DBC, AUTO)
+        language: Programming language (PYTHON, SQL, SCALA, R)
+        overwrite: Whether to overwrite existing notebook
+
+    Returns:
+        Dictionary containing import result
+    """
+    params = {
+        "path": path,
+        "content": content,
+        "format": format,
+        "overwrite": overwrite
+    }
+    if language:
+        params["language"] = language
+
+    result = await mcp_client._call_mcp_tool("import_notebook", params)
+    return result
+
+
+async def delete_notebook(path: str, recursive: bool = False) -> Dict[str, Any]:
+    """Delete a notebook or directory from the workspace.
+
+    Args:
+        path: Full workspace path to delete
+        recursive: Whether to delete directories recursively
+
+    Returns:
+        Dictionary containing deletion result
+    """
+    params = {
+        "path": path,
+        "recursive": recursive
+    }
+    result = await mcp_client._call_mcp_tool("delete_notebook", params)
+    return result
+
+
+async def create_directory(path: str) -> Dict[str, Any]:
+    """Create a directory in the workspace.
+
+    Args:
+        path: Full workspace path for the new directory
+
+    Returns:
+        Dictionary containing creation result
+    """
+    result = await mcp_client._call_mcp_tool("create_directory", {"path": path})
+    return result
+
+
+async def search_notebooks(query: str, max_results: int = 25, path_prefix: Optional[str] = None) -> Dict[str, Any]:
+    """Search for notebooks in the workspace.
+
+    Args:
+        query: Search query string
+        max_results: Maximum number of results to return
+        path_prefix: Limit search to paths starting with this prefix
+
+    Returns:
+        List of matching notebook objects
+    """
+    params = {
+        "query": query,
+        "max_results": max_results
+    }
+    if path_prefix:
+        params["path_prefix"] = path_prefix
+
+    result = await mcp_client._call_mcp_tool("search_notebooks", params)
     return result
 
 
@@ -1220,5 +1481,127 @@ def stop_warehouse_sync(warehouse_id: str) -> Dict[str, Any]:
                 return future.result()
         except RuntimeError:
             return asyncio.run(stop_warehouse(warehouse_id))
+    except Exception as e:
+        return {"status": "error", "error": str(e)}
+
+
+# Synchronous wrappers for notebook management tools
+def list_notebooks_sync(path: str = "/", object_type: Optional[str] = None) -> Dict[str, Any]:
+    """Synchronous wrapper for list_notebooks."""
+    try:
+        try:
+            loop = asyncio.get_running_loop()
+            import concurrent.futures
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                future = executor.submit(asyncio.run, list_notebooks(path, object_type))
+                return future.result()
+        except RuntimeError:
+            return asyncio.run(list_notebooks(path, object_type))
+    except Exception as e:
+        return {"status": "error", "error": str(e)}
+
+
+def get_notebook_info_sync(path: str) -> Dict[str, Any]:
+    """Synchronous wrapper for get_notebook_info."""
+    try:
+        try:
+            loop = asyncio.get_running_loop()
+            import concurrent.futures
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                future = executor.submit(asyncio.run, get_notebook_info(path))
+                return future.result()
+        except RuntimeError:
+            return asyncio.run(get_notebook_info(path))
+    except Exception as e:
+        return {"status": "error", "error": str(e)}
+
+
+def export_notebook_sync(path: str, format: str = "SOURCE", direct_download: bool = False) -> Dict[str, Any]:
+    """Synchronous wrapper for export_notebook."""
+    try:
+        try:
+            loop = asyncio.get_running_loop()
+            import concurrent.futures
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                future = executor.submit(asyncio.run, export_notebook(path, format, direct_download))
+                return future.result()
+        except RuntimeError:
+            return asyncio.run(export_notebook(path, format, direct_download))
+    except Exception as e:
+        return {"status": "error", "error": str(e)}
+
+
+def create_notebook_sync(path: str, language: str = "PYTHON", content: Optional[str] = None) -> Dict[str, Any]:
+    """Synchronous wrapper for create_notebook."""
+    try:
+        try:
+            loop = asyncio.get_running_loop()
+            import concurrent.futures
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                future = executor.submit(asyncio.run, create_notebook(path, language, content))
+                return future.result()
+        except RuntimeError:
+            return asyncio.run(create_notebook(path, language, content))
+    except Exception as e:
+        return {"status": "error", "error": str(e)}
+
+
+def import_notebook_sync(path: str, content: str, format: str = "AUTO",
+                        language: Optional[str] = None, overwrite: bool = False) -> Dict[str, Any]:
+    """Synchronous wrapper for import_notebook."""
+    try:
+        try:
+            loop = asyncio.get_running_loop()
+            import concurrent.futures
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                future = executor.submit(asyncio.run, import_notebook(path, content, format, language, overwrite))
+                return future.result()
+        except RuntimeError:
+            return asyncio.run(import_notebook(path, content, format, language, overwrite))
+    except Exception as e:
+        return {"status": "error", "error": str(e)}
+
+
+def delete_notebook_sync(path: str, recursive: bool = False) -> Dict[str, Any]:
+    """Synchronous wrapper for delete_notebook."""
+    try:
+        try:
+            loop = asyncio.get_running_loop()
+            import concurrent.futures
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                future = executor.submit(asyncio.run, delete_notebook(path, recursive))
+                return future.result()
+        except RuntimeError:
+            return asyncio.run(delete_notebook(path, recursive))
+    except Exception as e:
+        return {"status": "error", "error": str(e)}
+
+
+def create_directory_sync(path: str) -> Dict[str, Any]:
+    """Synchronous wrapper for create_directory."""
+    try:
+        try:
+            loop = asyncio.get_running_loop()
+            import concurrent.futures
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                future = executor.submit(asyncio.run, create_directory(path))
+                return future.result()
+        except RuntimeError:
+            return asyncio.run(create_directory(path))
+    except Exception as e:
+        return {"status": "error", "error": str(e)}
+
+
+def search_notebooks_sync(query: str, max_results: int = 25, path_prefix: Optional[str] = None) -> Dict[str, Any]:
+    """Synchronous wrapper for search_notebooks."""
+    try:
+        try:
+            loop = asyncio.get_running_loop()
+            import concurrent.futures
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                future = executor.submit(asyncio.run, search_notebooks(query, max_results, path_prefix))
+                return future.result()
+        except RuntimeError:
+            return asyncio.run(search_notebooks(query, max_results, path_prefix))
     except Exception as e:
         return {"status": "error", "error": str(e)}
