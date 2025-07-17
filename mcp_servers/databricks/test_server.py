@@ -11,9 +11,24 @@ import os
 import sys
 from pathlib import Path
 
-# Add the current directory to Python path
+# Add the root directory to Python path so we can import mcp_servers
 current_dir = Path(__file__).parent
-sys.path.insert(0, str(current_dir))
+root_dir = current_dir.parent.parent
+sys.path.insert(0, str(root_dir))
+
+# Load environment variables from .env file
+try:
+    from dotenv import load_dotenv
+    # Load from the root directory (two levels up from this script)
+    root_dir = current_dir.parent.parent
+    env_path = root_dir / ".env"
+    if env_path.exists():
+        load_dotenv(env_path)
+        print(f"Loaded environment from: {env_path}")
+    else:
+        print(f"No .env file found at: {env_path}")
+except ImportError:
+    print("python-dotenv not available, using system environment variables")
 
 async def test_configuration():
     """Test configuration loading and validation."""

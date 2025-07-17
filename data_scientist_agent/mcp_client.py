@@ -124,6 +124,39 @@ class DatabricksMCPClient:
                 finally:
                     await self._cleanup_sessions(sql_client)
 
+            elif tool_name == "get_warehouse":
+                from mcp_servers.databricks.api.sql import sql_client
+                try:
+                    warehouse_id = params.get("warehouse_id")
+                    if not warehouse_id:
+                        return {"status": "error", "error": "warehouse_id is required"}
+                    result = await sql_client.get_warehouse(warehouse_id)
+                    return {"status": "success", "data": result}
+                finally:
+                    await self._cleanup_sessions(sql_client)
+
+            elif tool_name == "start_warehouse":
+                from mcp_servers.databricks.api.sql import sql_client
+                try:
+                    warehouse_id = params.get("warehouse_id")
+                    if not warehouse_id:
+                        return {"status": "error", "error": "warehouse_id is required"}
+                    result = await sql_client.start_warehouse(warehouse_id)
+                    return {"status": "success", "data": result}
+                finally:
+                    await self._cleanup_sessions(sql_client)
+
+            elif tool_name == "stop_warehouse":
+                from mcp_servers.databricks.api.sql import sql_client
+                try:
+                    warehouse_id = params.get("warehouse_id")
+                    if not warehouse_id:
+                        return {"status": "error", "error": "warehouse_id is required"}
+                    result = await sql_client.stop_warehouse(warehouse_id)
+                    return {"status": "success", "data": result}
+                finally:
+                    await self._cleanup_sessions(sql_client)
+
             elif tool_name == "list_jobs":
                 from mcp_servers.databricks.api.jobs import jobs_client
                 try:
@@ -203,6 +236,24 @@ async def execute_sql(statement: str, warehouse_id: Optional[str] = None,
 async def list_warehouses() -> Dict[str, Any]:
     """List all SQL warehouses in the workspace."""
     result = await mcp_client._call_mcp_tool("list_warehouses")
+    return result
+
+
+async def get_warehouse(warehouse_id: str) -> Dict[str, Any]:
+    """Get information about a specific SQL warehouse."""
+    result = await mcp_client._call_mcp_tool("get_warehouse", {"warehouse_id": warehouse_id})
+    return result
+
+
+async def start_warehouse(warehouse_id: str) -> Dict[str, Any]:
+    """Start a stopped SQL warehouse."""
+    result = await mcp_client._call_mcp_tool("start_warehouse", {"warehouse_id": warehouse_id})
+    return result
+
+
+async def stop_warehouse(warehouse_id: str) -> Dict[str, Any]:
+    """Stop a running SQL warehouse."""
+    result = await mcp_client._call_mcp_tool("stop_warehouse", {"warehouse_id": warehouse_id})
     return result
 
 
@@ -1124,5 +1175,50 @@ def run_job_sync(job_id: str) -> Dict[str, Any]:
                 return future.result()
         except RuntimeError:
             return asyncio.run(run_job(job_id))
+    except Exception as e:
+        return {"status": "error", "error": str(e)}
+
+
+def get_warehouse_sync(warehouse_id: str) -> Dict[str, Any]:
+    """Synchronous wrapper for get_warehouse."""
+    try:
+        try:
+            loop = asyncio.get_running_loop()
+            import concurrent.futures
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                future = executor.submit(asyncio.run, get_warehouse(warehouse_id))
+                return future.result()
+        except RuntimeError:
+            return asyncio.run(get_warehouse(warehouse_id))
+    except Exception as e:
+        return {"status": "error", "error": str(e)}
+
+
+def start_warehouse_sync(warehouse_id: str) -> Dict[str, Any]:
+    """Synchronous wrapper for start_warehouse."""
+    try:
+        try:
+            loop = asyncio.get_running_loop()
+            import concurrent.futures
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                future = executor.submit(asyncio.run, start_warehouse(warehouse_id))
+                return future.result()
+        except RuntimeError:
+            return asyncio.run(start_warehouse(warehouse_id))
+    except Exception as e:
+        return {"status": "error", "error": str(e)}
+
+
+def stop_warehouse_sync(warehouse_id: str) -> Dict[str, Any]:
+    """Synchronous wrapper for stop_warehouse."""
+    try:
+        try:
+            loop = asyncio.get_running_loop()
+            import concurrent.futures
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                future = executor.submit(asyncio.run, stop_warehouse(warehouse_id))
+                return future.result()
+        except RuntimeError:
+            return asyncio.run(stop_warehouse(warehouse_id))
     except Exception as e:
         return {"status": "error", "error": str(e)}

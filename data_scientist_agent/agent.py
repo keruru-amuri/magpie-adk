@@ -14,7 +14,8 @@ from common.model_factory import create_model_for_agent
 
 # Import MCP client tools
 from .mcp_client import (
-    list_clusters_sync, get_cluster_sync, execute_sql_sync,
+    list_clusters_sync, get_cluster_sync, start_cluster_sync, terminate_cluster_sync, execute_sql_sync,
+    list_warehouses_sync, get_warehouse_sync, start_warehouse_sync, stop_warehouse_sync,
     get_table_metadata_sync, set_table_context_sync, load_context_from_csv_sync,
     read_csv_content_sync, process_csv_for_table_context_sync, convert_schema_csv_to_context_sync
 )
@@ -61,6 +62,9 @@ def get_data_science_capabilities() -> dict:
                 "start_cluster_sync - Start terminated clusters for data processing",
                 "terminate_cluster_sync - Stop running clusters to save resources",
                 "list_warehouses_sync - View available SQL warehouses",
+                "get_warehouse_sync - Get detailed warehouse information",
+                "start_warehouse_sync - Start stopped SQL warehouses for queries",
+                "stop_warehouse_sync - Stop running SQL warehouses to save costs",
                 "list_jobs_sync - View available data processing jobs",
                 "get_job_sync - Get detailed job information",
                 "run_job_sync - Execute data processing workflows"
@@ -201,14 +205,26 @@ For CSV file processing (when users can't upload files):
 
 For cluster management:
 1. Check cluster availability before running intensive queries
-2. Provide status updates on cluster operations
-4. Help users manage computational resources efficiently
+2. Start terminated clusters when needed for data processing
+3. Terminate running clusters to save costs when not needed
+4. Provide status updates on cluster operations
+5. Help users manage computational resources efficiently
+
+For warehouse management:
+1. List available SQL warehouses before executing queries
+2. Check warehouse status and configuration details
+3. Start stopped warehouses when needed for SQL operations
+4. Stop running warehouses to optimize costs when not in use
+5. Recommend appropriate warehouse sizes for different workloads
+6. Help users understand warehouse vs cluster differences
 
 Always prioritize data accuracy and provide context for your analyses.
 Be helpful in explaining technical concepts in accessible terms.""",
         tools=[
             # Cluster management tools
-            list_clusters_sync, get_cluster_sync,
+            list_clusters_sync, get_cluster_sync, start_cluster_sync, terminate_cluster_sync,
+            # Warehouse management tools
+            list_warehouses_sync, get_warehouse_sync, start_warehouse_sync, stop_warehouse_sync,
             # Data analysis tools
             execute_sql_sync,
             # Table metadata management tools

@@ -148,15 +148,88 @@ class SQLClient(BaseDatabricksClient):
     async def get_warehouse(self, warehouse_id: str) -> Dict[str, Any]:
         """
         Get information about a specific SQL warehouse.
-        
+
         Args:
             warehouse_id: ID of the warehouse
-            
+
         Returns:
             Dictionary containing warehouse details
         """
         logger.info(f"Getting warehouse info for {warehouse_id}")
         return await self.get(f"/api/2.0/sql/warehouses/{warehouse_id}")
+
+    async def start_warehouse(self, warehouse_id: str) -> Dict[str, Any]:
+        """
+        Start a SQL warehouse.
+
+        Args:
+            warehouse_id: ID of the warehouse to start
+
+        Returns:
+            Dictionary containing operation result
+        """
+        logger.info(f"Starting warehouse {warehouse_id}")
+        return await self.post(f"/api/2.0/sql/warehouses/{warehouse_id}/start")
+
+    async def stop_warehouse(self, warehouse_id: str) -> Dict[str, Any]:
+        """
+        Stop a SQL warehouse.
+
+        Args:
+            warehouse_id: ID of the warehouse to stop
+
+        Returns:
+            Dictionary containing operation result
+        """
+        logger.info(f"Stopping warehouse {warehouse_id}")
+        return await self.post(f"/api/2.0/sql/warehouses/{warehouse_id}/stop")
+
+    async def create_warehouse(self, warehouse_config: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Create a new SQL warehouse.
+
+        Args:
+            warehouse_config: Warehouse configuration dictionary
+
+        Returns:
+            Dictionary containing the new warehouse information
+        """
+        logger.info(f"Creating warehouse with config: {warehouse_config}")
+
+        # Validate required fields
+        required_fields = ["name", "cluster_size"]
+        for field in required_fields:
+            if field not in warehouse_config:
+                raise ValueError(f"Missing required field: {field}")
+
+        return await self.post("/api/2.0/sql/warehouses", data=warehouse_config)
+
+    async def delete_warehouse(self, warehouse_id: str) -> Dict[str, Any]:
+        """
+        Delete a SQL warehouse.
+
+        Args:
+            warehouse_id: ID of the warehouse to delete
+
+        Returns:
+            Dictionary containing operation result
+        """
+        logger.info(f"Deleting warehouse {warehouse_id}")
+        return await self.delete(f"/api/2.0/sql/warehouses/{warehouse_id}")
+
+    async def edit_warehouse(self, warehouse_id: str, warehouse_config: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Edit/update a SQL warehouse configuration.
+
+        Args:
+            warehouse_id: ID of the warehouse to edit
+            warehouse_config: Updated warehouse configuration
+
+        Returns:
+            Dictionary containing operation result
+        """
+        logger.info(f"Editing warehouse {warehouse_id} with config: {warehouse_config}")
+        return await self.post(f"/api/2.0/sql/warehouses/{warehouse_id}/edit", data=warehouse_config)
 
 
 # Global client instance
@@ -199,3 +272,28 @@ async def list_warehouses() -> Dict[str, Any]:
 async def get_warehouse(warehouse_id: str) -> Dict[str, Any]:
     """Get warehouse information."""
     return await sql_client.get_warehouse(warehouse_id)
+
+
+async def start_warehouse(warehouse_id: str) -> Dict[str, Any]:
+    """Start a SQL warehouse."""
+    return await sql_client.start_warehouse(warehouse_id)
+
+
+async def stop_warehouse(warehouse_id: str) -> Dict[str, Any]:
+    """Stop a SQL warehouse."""
+    return await sql_client.stop_warehouse(warehouse_id)
+
+
+async def create_warehouse(warehouse_config: Dict[str, Any]) -> Dict[str, Any]:
+    """Create a new SQL warehouse."""
+    return await sql_client.create_warehouse(warehouse_config)
+
+
+async def delete_warehouse(warehouse_id: str) -> Dict[str, Any]:
+    """Delete a SQL warehouse."""
+    return await sql_client.delete_warehouse(warehouse_id)
+
+
+async def edit_warehouse(warehouse_id: str, warehouse_config: Dict[str, Any]) -> Dict[str, Any]:
+    """Edit a SQL warehouse."""
+    return await sql_client.edit_warehouse(warehouse_id, warehouse_config)

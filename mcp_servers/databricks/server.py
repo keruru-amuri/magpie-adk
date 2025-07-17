@@ -201,6 +201,92 @@ class DatabricksMCPServer(FastMCP):
                 logger.error(f"Error listing warehouses: {str(e)}")
                 return [{"text": json.dumps({"error": str(e)}, indent=2)}]
 
+        @self.tool(
+            name="get_warehouse",
+            description="Get information about a specific SQL warehouse. Parameters: warehouse_id (required)",
+        )
+        async def get_warehouse(params: Dict[str, Any]) -> List[TextContent]:
+            logger.info(f"Getting warehouse info with params: {params}")
+            try:
+                actual_params = _unwrap_params(params)
+                warehouse_id = actual_params.get("warehouse_id")
+                if not warehouse_id:
+                    raise ValueError("warehouse_id is required")
+
+                result = await sql_client.get_warehouse(warehouse_id)
+                return [{"text": json.dumps(result, indent=2)}]
+            except Exception as e:
+                logger.error(f"Error getting warehouse info: {str(e)}")
+                return [{"text": json.dumps({"error": str(e)}, indent=2)}]
+
+        @self.tool(
+            name="start_warehouse",
+            description="Start a stopped SQL warehouse. Parameters: warehouse_id (required)",
+        )
+        async def start_warehouse(params: Dict[str, Any]) -> List[TextContent]:
+            logger.info(f"Starting warehouse with params: {params}")
+            try:
+                actual_params = _unwrap_params(params)
+                warehouse_id = actual_params.get("warehouse_id")
+                if not warehouse_id:
+                    raise ValueError("warehouse_id is required")
+
+                result = await sql_client.start_warehouse(warehouse_id)
+                return [{"text": json.dumps(result, indent=2)}]
+            except Exception as e:
+                logger.error(f"Error starting warehouse: {str(e)}")
+                return [{"text": json.dumps({"error": str(e)}, indent=2)}]
+
+        @self.tool(
+            name="stop_warehouse",
+            description="Stop a running SQL warehouse. Parameters: warehouse_id (required)",
+        )
+        async def stop_warehouse(params: Dict[str, Any]) -> List[TextContent]:
+            logger.info(f"Stopping warehouse with params: {params}")
+            try:
+                actual_params = _unwrap_params(params)
+                warehouse_id = actual_params.get("warehouse_id")
+                if not warehouse_id:
+                    raise ValueError("warehouse_id is required")
+
+                result = await sql_client.stop_warehouse(warehouse_id)
+                return [{"text": json.dumps(result, indent=2)}]
+            except Exception as e:
+                logger.error(f"Error stopping warehouse: {str(e)}")
+                return [{"text": json.dumps({"error": str(e)}, indent=2)}]
+
+        @self.tool(
+            name="create_warehouse",
+            description="Create a new SQL warehouse. Parameters: name (required), cluster_size (required), auto_stop_mins (optional), max_num_clusters (optional)",
+        )
+        async def create_warehouse(params: Dict[str, Any]) -> List[TextContent]:
+            logger.info(f"Creating warehouse with params: {params}")
+            try:
+                actual_params = _unwrap_params(params)
+                result = await sql_client.create_warehouse(actual_params)
+                return [{"text": json.dumps(result, indent=2)}]
+            except Exception as e:
+                logger.error(f"Error creating warehouse: {str(e)}")
+                return [{"text": json.dumps({"error": str(e)}, indent=2)}]
+
+        @self.tool(
+            name="delete_warehouse",
+            description="Delete a SQL warehouse. Parameters: warehouse_id (required)",
+        )
+        async def delete_warehouse(params: Dict[str, Any]) -> List[TextContent]:
+            logger.info(f"Deleting warehouse with params: {params}")
+            try:
+                actual_params = _unwrap_params(params)
+                warehouse_id = actual_params.get("warehouse_id")
+                if not warehouse_id:
+                    raise ValueError("warehouse_id is required")
+
+                result = await sql_client.delete_warehouse(warehouse_id)
+                return [{"text": json.dumps(result, indent=2)}]
+            except Exception as e:
+                logger.error(f"Error deleting warehouse: {str(e)}")
+                return [{"text": json.dumps({"error": str(e)}, indent=2)}]
+
         # Job management tools
         @self.tool(
             name="list_jobs",

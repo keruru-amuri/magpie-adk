@@ -6,6 +6,7 @@ python-dotenv
 
 # Additional useful packages
 requests
+pandas
 
 # MCP (Model Context Protocol) dependencies for centralized servers
 mcp>=1.0.0

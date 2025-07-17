@@ -68,20 +68,23 @@ GOOGLE_GENAI_USE_VERTEXAI=False
 # Model Selection Strategy
 MODEL_SELECTION_STRATEGY=agent_specific
 
-# Databricks Configuration (for Engineering Process Procedure Agent [db])
-# Required for service principal authentication to Databricks serving endpoints
+# Databricks Configuration (for Engineering Process Procedure Agent and MCP Server)
+# Required for service principal authentication to Databricks APIs
 #
 # How to obtain these values:
-# 1. DATABRICKS_HOST: Your Databricks workspace URL (e.g., https://adb-123456789.11.azuredatabricks.net)
-# 2. ARM_TENANT_ID: Azure AD tenant ID where your service principal is registered
-# 3. ARM_CLIENT_ID: Service principal application (client) ID
-# 4. ARM_CLIENT_SECRET: Service principal client secret
+# 1. DATABRICKS_WORKSPACE_URL: Your Databricks workspace URL (e.g., https://adb-123456789.11.azuredatabricks.net)
+# 2. DATABRICKS_TENANT_ID: Azure AD tenant ID where your service principal is registered
+# 3. DATABRICKS_CLIENT_ID: Service principal application (client) ID
+# 4. DATABRICKS_CLIENT_SECRET: Service principal client secret
 #
-# Note: The service principal must have access to Databricks serving endpoints
-DATABRICKS_HOST=https://your-databricks-workspace.azuredatabricks.net
-ARM_TENANT_ID=your_azure_tenant_id
-ARM_CLIENT_ID=your_service_principal_client_id
-ARM_CLIENT_SECRET=your_service_principal_secret
+# Note: The service principal must have access to Databricks APIs and serving endpoints
+DATABRICKS_WORKSPACE_URL=https://your-databricks-workspace.azuredatabricks.net
+DATABRICKS_TENANT_ID=your_azure_tenant_id
+DATABRICKS_CLIENT_ID=your_service_principal_client_id
+DATABRICKS_CLIENT_SECRET=your_service_principal_secret
+
+# Optional: Default warehouse for SQL operations
+DATABRICKS_WAREHOUSE_ID=your_warehouse_id
 
 # MAGPIE Platform Configuration
 DEFAULT_LLM_MODEL=azure/gpt-4.1
