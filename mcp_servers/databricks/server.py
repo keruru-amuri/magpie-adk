@@ -21,7 +21,11 @@ from mcp.server.stdio import stdio_server
 from mcp_servers.databricks.api.clusters import clusters_client
 from mcp_servers.databricks.api.sql import sql_client
 from mcp_servers.databricks.api.jobs import jobs_client
+from mcp_servers.databricks.api.notebooks import NotebooksClient
 from mcp_servers.databricks.config import settings
+
+# Initialize notebooks client
+notebooks_client = NotebooksClient()
 
 # Configure logging
 logging.basicConfig(
@@ -340,6 +344,166 @@ class DatabricksMCPServer(FastMCP):
                 return [{"text": json.dumps(result, indent=2)}]
             except Exception as e:
                 logger.error(f"Error running job: {str(e)}")
+                return [{"text": json.dumps({"error": str(e)}, indent=2)}]
+
+        # Notebook management tools
+        @self.tool(
+            name="list_notebooks",
+            description="List notebooks and directories in workspace. Parameters: path (optional, default '/'), object_type (optional filter: NOTEBOOK, DIRECTORY, FILE)",
+        )
+        async def list_notebooks(params: Dict[str, Any]) -> List[TextContent]:
+            logger.info(f"Listing notebooks with params: {params}")
+            try:
+                actual_params = _unwrap_params(params)
+                path = actual_params.get("path", "/")
+                object_type = actual_params.get("object_type")
+
+                result = await notebooks_client.list_workspace_objects(path, object_type)
+                return [{"text": json.dumps(result, indent=2)}]
+            except Exception as e:
+                logger.error(f"Error listing notebooks: {str(e)}")
+                return [{"text": json.dumps({"error": str(e)}, indent=2)}]
+
+        @self.tool(
+            name="get_notebook_info",
+            description="Get metadata about a notebook or workspace object. Parameters: path (required)",
+        )
+        async def get_notebook_info(params: Dict[str, Any]) -> List[TextContent]:
+            logger.info(f"Getting notebook info with params: {params}")
+            try:
+                actual_params = _unwrap_params(params)
+                path = actual_params.get("path")
+                if not path:
+                    raise ValueError("path is required")
+
+                result = await notebooks_client.get_notebook_status(path)
+                return [{"text": json.dumps(result, indent=2)}]
+            except Exception as e:
+                logger.error(f"Error getting notebook info: {str(e)}")
+                return [{"text": json.dumps({"error": str(e)}, indent=2)}]
+
+        @self.tool(
+            name="export_notebook",
+            description="Export a notebook from workspace. Parameters: path (required), format (optional: SOURCE, HTML, JUPYTER, DBC, AUTO), direct_download (optional: true/false)",
+        )
+        async def export_notebook(params: Dict[str, Any]) -> List[TextContent]:
+            logger.info(f"Exporting notebook with params: {params}")
+            try:
+                actual_params = _unwrap_params(params)
+                path = actual_params.get("path")
+                if not path:
+                    raise ValueError("path is required")
+
+                format_type = actual_params.get("format", "SOURCE")
+                direct_download = actual_params.get("direct_download", False)
+
+                result = await notebooks_client.export_notebook(path, format_type, direct_download)
+                return [{"text": json.dumps(result, indent=2)}]
+            except Exception as e:
+                logger.error(f"Error exporting notebook: {str(e)}")
+                return [{"text": json.dumps({"error": str(e)}, indent=2)}]
+
+        @self.tool(
+            name="create_notebook",
+            description="Create a new notebook in workspace. Parameters: path (required), language (optional: PYTHON, SQL, SCALA, R), content (optional initial content)",
+        )
+        async def create_notebook(params: Dict[str, Any]) -> List[TextContent]:
+            logger.info(f"Creating notebook with params: {params}")
+            try:
+                actual_params = _unwrap_params(params)
+                path = actual_params.get("path")
+                if not path:
+                    raise ValueError("path is required")
+
+                language = actual_params.get("language", "PYTHON")
+                content = actual_params.get("content")
+
+                result = await notebooks_client.create_notebook(path, language, content)
+                return [{"text": json.dumps(result, indent=2)}]
+            except Exception as e:
+                logger.error(f"Error creating notebook: {str(e)}")
+                return [{"text": json.dumps({"error": str(e)}, indent=2)}]
+
+        @self.tool(
+            name="import_notebook",
+            description="Import a notebook to workspace. Parameters: path (required), content (required, base64 encoded), format (optional: SOURCE, HTML, JUPYTER, DBC, AUTO), language (optional: PYTHON, SQL, SCALA, R), overwrite (optional: true/false)",
+        )
+        async def import_notebook(params: Dict[str, Any]) -> List[TextContent]:
+            logger.info(f"Importing notebook with params: {params}")
+            try:
+                actual_params = _unwrap_params(params)
+                path = actual_params.get("path")
+                content = actual_params.get("content")
+                if not path or not content:
+                    raise ValueError("path and content are required")
+
+                format_type = actual_params.get("format", "AUTO")
+                language = actual_params.get("language")
+                overwrite = actual_params.get("overwrite", False)
+
+                result = await notebooks_client.import_notebook(path, content, format_type, language, overwrite)
+                return [{"text": json.dumps(result, indent=2)}]
+            except Exception as e:
+                logger.error(f"Error importing notebook: {str(e)}")
+                return [{"text": json.dumps({"error": str(e)}, indent=2)}]
+
+        @self.tool(
+            name="delete_notebook",
+            description="Delete a notebook or directory from workspace. Parameters: path (required), recursive (optional: true/false for directories)",
+        )
+        async def delete_notebook(params: Dict[str, Any]) -> List[TextContent]:
+            logger.info(f"Deleting notebook with params: {params}")
+            try:
+                actual_params = _unwrap_params(params)
+                path = actual_params.get("path")
+                if not path:
+                    raise ValueError("path is required")
+
+                recursive = actual_params.get("recursive", False)
+
+                result = await notebooks_client.delete_notebook(path, recursive)
+                return [{"text": json.dumps(result, indent=2)}]
+            except Exception as e:
+                logger.error(f"Error deleting notebook: {str(e)}")
+                return [{"text": json.dumps({"error": str(e)}, indent=2)}]
+
+        @self.tool(
+            name="create_directory",
+            description="Create a directory in workspace. Parameters: path (required)",
+        )
+        async def create_directory(params: Dict[str, Any]) -> List[TextContent]:
+            logger.info(f"Creating directory with params: {params}")
+            try:
+                actual_params = _unwrap_params(params)
+                path = actual_params.get("path")
+                if not path:
+                    raise ValueError("path is required")
+
+                result = await notebooks_client.create_directory(path)
+                return [{"text": json.dumps(result, indent=2)}]
+            except Exception as e:
+                logger.error(f"Error creating directory: {str(e)}")
+                return [{"text": json.dumps({"error": str(e)}, indent=2)}]
+
+        @self.tool(
+            name="search_notebooks",
+            description="Search for notebooks in workspace. Parameters: query (required), max_results (optional, default 25), path_prefix (optional)",
+        )
+        async def search_notebooks(params: Dict[str, Any]) -> List[TextContent]:
+            logger.info(f"Searching notebooks with params: {params}")
+            try:
+                actual_params = _unwrap_params(params)
+                query = actual_params.get("query")
+                if not query:
+                    raise ValueError("query is required")
+
+                max_results = actual_params.get("max_results", 25)
+                path_prefix = actual_params.get("path_prefix")
+
+                result = await notebooks_client.search_notebooks(query, max_results, path_prefix)
+                return [{"text": json.dumps(result, indent=2)}]
+            except Exception as e:
+                logger.error(f"Error searching notebooks: {str(e)}")
                 return [{"text": json.dumps({"error": str(e)}, indent=2)}]
 
 

@@ -11,3 +11,7 @@ This package provides API clients for various Databricks services:
 - Repos
 - Unity Catalog
 """
+
+from .notebooks import NotebooksClient
+
+__all__ = ["NotebooksClient"]

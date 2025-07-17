@@ -45,6 +45,16 @@ DATABRICKS_WAREHOUSE_ID=your-default-warehouse-id
 - `execute_sql`: Execute SQL statements on Databricks
 - `list_warehouses`: List all SQL warehouses
 
+### Notebook Management
+- `list_notebooks`: List notebooks and directories in workspace
+- `get_notebook_info`: Get metadata about a notebook or workspace object
+- `export_notebook`: Export a notebook from workspace in various formats
+- `create_notebook`: Create a new notebook in workspace
+- `import_notebook`: Import a notebook to workspace
+- `delete_notebook`: Delete a notebook or directory from workspace
+- `create_directory`: Create a directory in workspace
+- `search_notebooks`: Search for notebooks in workspace
+
 ## Installation
 
 1. Install dependencies:
@@ -91,6 +101,72 @@ MAGPIE Platform
     ├── Future MCP Server 1
     └── Future MCP Server N
 ```
+
+## Notebook Management Features
+
+The Databricks MCP server provides comprehensive notebook management capabilities for data scientist agents:
+
+### Core Notebook Operations
+
+**List Notebooks and Directories**
+```json
+{
+  "tool": "list_notebooks",
+  "params": {
+    "path": "/Users/user@example.com",
+    "object_type": "NOTEBOOK"
+  }
+}
+```
+
+**Create New Notebooks**
+```json
+{
+  "tool": "create_notebook",
+  "params": {
+    "path": "/Users/user@example.com/analysis.py",
+    "language": "PYTHON",
+    "content": "# Data analysis notebook\nimport pandas as pd\nprint('Hello, Databricks!')"
+  }
+}
+```
+
+**Export Notebooks**
+```json
+{
+  "tool": "export_notebook",
+  "params": {
+    "path": "/Users/user@example.com/analysis.py",
+    "format": "JUPYTER",
+    "direct_download": false
+  }
+}
+```
+
+### Advanced Features
+
+**Search Notebooks**
+- Find notebooks by name or path patterns
+- Filter by workspace location
+- Limit results for performance
+
+**Import/Export Support**
+- Multiple formats: SOURCE, HTML, JUPYTER, DBC, AUTO
+- Base64 encoding for content transfer
+- Language detection and validation
+
+**Directory Management**
+- Create workspace directories
+- Recursive deletion support
+- Path validation and normalization
+
+### Use Cases for Data Scientist Agents
+
+1. **Notebook Discovery**: Agents can explore available notebooks and understand the workspace structure
+2. **Dynamic Notebook Creation**: Create analysis notebooks based on user requirements
+3. **Content Analysis**: Export and analyze existing notebook content
+4. **Workspace Organization**: Create directories and organize notebooks systematically
+5. **Collaborative Development**: Import notebooks from external sources or export for sharing
 
 ## Security Considerations
 
