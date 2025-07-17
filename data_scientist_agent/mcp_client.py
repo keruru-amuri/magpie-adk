@@ -21,6 +21,28 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
+def safe_json_loads(json_str: str, default=None) -> Any:
+    """Safely parse JSON string with fallback."""
+    try:
+        return json.loads(json_str)
+    except (json.JSONDecodeError, TypeError, ValueError) as e:
+        logger.warning(f"Failed to parse JSON: {e}. String: {json_str[:100]}...")
+        return default if default is not None else {}
+
+
+def sanitize_for_json(data: Any) -> Any:
+    """Sanitize data to ensure it can be safely serialized to JSON."""
+    if isinstance(data, dict):
+        return {k: sanitize_for_json(v) for k, v in data.items()}
+    elif isinstance(data, list):
+        return [sanitize_for_json(item) for item in data]
+    elif isinstance(data, str):
+        # Remove or replace problematic characters
+        return data.replace('\x00', '').replace('\b', '').replace('\f', '').replace('\v', '')
+    else:
+        return data
+
+
 class DatabricksMCPClient:
     """Client for communicating with the Databricks MCP server."""
 
@@ -180,7 +202,114 @@ class DatabricksMCPClient:
                     return {"status": "error", "error": "job_id is required"}
                 result = await jobs_client.run_job(job_id)
                 return {"status": "success", "data": result}
-                
+
+            # Notebook management tools
+            elif tool_name == "list_notebooks":
+                from mcp_servers.databricks.api.notebooks import NotebooksClient
+                notebooks_client = NotebooksClient()
+                try:
+                    path = params.get("path", "/") if params else "/"
+                    object_type = params.get("object_type") if params else None
+                    result = await notebooks_client.list_workspace_objects(path, object_type)
+                    return {"status": "success", "data": result}
+                finally:
+                    await self._cleanup_sessions(notebooks_client)
+
+            elif tool_name == "get_notebook_info":
+                from mcp_servers.databricks.api.notebooks import NotebooksClient
+                notebooks_client = NotebooksClient()
+                path = params.get("path") if params else None
+                if not path:
+                    return {"status": "error", "error": "path is required"}
+                try:
+                    result = await notebooks_client.get_notebook_status(path)
+                    return {"status": "success", "data": result}
+                finally:
+                    await self._cleanup_sessions(notebooks_client)
+
+            elif tool_name == "export_notebook":
+                from mcp_servers.databricks.api.notebooks import NotebooksClient
+                notebooks_client = NotebooksClient()
+                path = params.get("path") if params else None
+                if not path:
+                    return {"status": "error", "error": "path is required"}
+                try:
+                    format_type = params.get("format", "SOURCE") if params else "SOURCE"
+                    direct_download = params.get("direct_download", False) if params else False
+                    result = await notebooks_client.export_notebook(path, format_type, direct_download)
+                    return {"status": "success", "data": result}
+                finally:
+                    await self._cleanup_sessions(notebooks_client)
+
+            elif tool_name == "create_notebook":
+                from mcp_servers.databricks.api.notebooks import NotebooksClient
+                notebooks_client = NotebooksClient()
+                path = params.get("path") if params else None
+                if not path:
+                    return {"status": "error", "error": "path is required"}
+                try:
+                    language = params.get("language", "PYTHON") if params else "PYTHON"
+                    content = params.get("content") if params else None
+                    result = await notebooks_client.create_notebook(path, language, content)
+                    return {"status": "success", "data": result}
+                finally:
+                    await self._cleanup_sessions(notebooks_client)
+
+            elif tool_name == "import_notebook":
+                from mcp_servers.databricks.api.notebooks import NotebooksClient
+                notebooks_client = NotebooksClient()
+                path = params.get("path") if params else None
+                content = params.get("content") if params else None
+                if not path or not content:
+                    return {"status": "error", "error": "path and content are required"}
+                try:
+                    format_type = params.get("format", "AUTO") if params else "AUTO"
+                    language = params.get("language") if params else None
+                    overwrite = params.get("overwrite", False) if params else False
+                    result = await notebooks_client.import_notebook(path, content, format_type, language, overwrite)
+                    return {"status": "success", "data": result}
+                finally:
+                    await self._cleanup_sessions(notebooks_client)
+
+            elif tool_name == "delete_notebook":
+                from mcp_servers.databricks.api.notebooks import NotebooksClient
+                notebooks_client = NotebooksClient()
+                path = params.get("path") if params else None
+                if not path:
+                    return {"status": "error", "error": "path is required"}
+                try:
+                    recursive = params.get("recursive", False) if params else False
+                    result = await notebooks_client.delete_notebook(path, recursive)
+                    return {"status": "success", "data": result}
+                finally:
+                    await self._cleanup_sessions(notebooks_client)
+
+            elif tool_name == "create_directory":
+                from mcp_servers.databricks.api.notebooks import NotebooksClient
+                notebooks_client = NotebooksClient()
+                path = params.get("path") if params else None
+                if not path:
+                    return {"status": "error", "error": "path is required"}
+                try:
+                    result = await notebooks_client.create_directory(path)
+                    return {"status": "success", "data": result}
+                finally:
+                    await self._cleanup_sessions(notebooks_client)
+
+            elif tool_name == "search_notebooks":
+                from mcp_servers.databricks.api.notebooks import NotebooksClient
+                notebooks_client = NotebooksClient()
+                query = params.get("query") if params else None
+                if not query:
+                    return {"status": "error", "error": "query is required"}
+                try:
+                    max_results = params.get("max_results", 25) if params else 25
+                    path_prefix = params.get("path_prefix") if params else None
+                    result = await notebooks_client.search_notebooks(query, max_results, path_prefix)
+                    return {"status": "success", "data": result}
+                finally:
+                    await self._cleanup_sessions(notebooks_client)
+
             else:
                 return {"status": "error", "error": f"Unknown tool: {tool_name}"}
                 
@@ -272,6 +401,160 @@ async def get_job(job_id: str) -> Dict[str, Any]:
 async def run_job(job_id: str) -> Dict[str, Any]:
     """Run a specific job."""
     result = await mcp_client._call_mcp_tool("run_job", {"job_id": job_id})
+    return result
+
+
+# Notebook Management Tools
+async def list_notebooks(path: str = "/", object_type: Optional[str] = None) -> Dict[str, Any]:
+    """List notebooks and directories in workspace.
+
+    Args:
+        path: Workspace path to list (default: root "/")
+        object_type: Filter by object type (NOTEBOOK, DIRECTORY, FILE)
+
+    Returns:
+        Dictionary containing list of workspace objects
+    """
+    params = {"path": path}
+    if object_type:
+        params["object_type"] = object_type
+
+    result = await mcp_client._call_mcp_tool("list_notebooks", params)
+    return result
+
+
+async def get_notebook_info(path: str) -> Dict[str, Any]:
+    """Get metadata about a notebook or workspace object.
+
+    Args:
+        path: Full workspace path to the object
+
+    Returns:
+        Dictionary containing object metadata
+    """
+    result = await mcp_client._call_mcp_tool("get_notebook_info", {"path": path})
+    return result
+
+
+async def export_notebook(path: str, format: str = "SOURCE", direct_download: bool = False) -> Dict[str, Any]:
+    """Export a notebook from the workspace.
+
+    Args:
+        path: Full workspace path to the notebook
+        format: Export format (SOURCE, HTML, JUPYTER, DBC, AUTO)
+        direct_download: If True, return content directly; if False, return base64 encoded
+
+    Returns:
+        Dictionary containing exported notebook content
+    """
+    params = {
+        "path": path,
+        "format": format,
+        "direct_download": direct_download
+    }
+    result = await mcp_client._call_mcp_tool("export_notebook", params)
+    return result
+
+
+async def create_notebook(path: str, language: str = "PYTHON", content: Optional[str] = None) -> Dict[str, Any]:
+    """Create a new notebook in the workspace.
+
+    Args:
+        path: Target workspace path for the new notebook
+        language: Programming language (PYTHON, SQL, SCALA, R)
+        content: Initial notebook content (optional)
+
+    Returns:
+        Dictionary containing creation result
+    """
+    params = {
+        "path": path,
+        "language": language
+    }
+    if content:
+        params["content"] = content
+
+    result = await mcp_client._call_mcp_tool("create_notebook", params)
+    return result
+
+
+async def import_notebook(path: str, content: str, format: str = "AUTO",
+                         language: Optional[str] = None, overwrite: bool = False) -> Dict[str, Any]:
+    """Import a notebook to the workspace.
+
+    Args:
+        path: Target workspace path for the notebook
+        content: Base64 encoded notebook content
+        format: Import format (SOURCE, HTML, JUPYTER, DBC, AUTO)
+        language: Programming language (PYTHON, SQL, SCALA, R)
+        overwrite: Whether to overwrite existing notebook
+
+    Returns:
+        Dictionary containing import result
+    """
+    params = {
+        "path": path,
+        "content": content,
+        "format": format,
+        "overwrite": overwrite
+    }
+    if language:
+        params["language"] = language
+
+    result = await mcp_client._call_mcp_tool("import_notebook", params)
+    return result
+
+
+async def delete_notebook(path: str, recursive: bool = False) -> Dict[str, Any]:
+    """Delete a notebook or directory from the workspace.
+
+    Args:
+        path: Full workspace path to delete
+        recursive: Whether to delete directories recursively
+
+    Returns:
+        Dictionary containing deletion result
+    """
+    params = {
+        "path": path,
+        "recursive": recursive
+    }
+    result = await mcp_client._call_mcp_tool("delete_notebook", params)
+    return result
+
+
+async def create_directory(path: str) -> Dict[str, Any]:
+    """Create a directory in the workspace.
+
+    Args:
+        path: Full workspace path for the new directory
+
+    Returns:
+        Dictionary containing creation result
+    """
+    result = await mcp_client._call_mcp_tool("create_directory", {"path": path})
+    return result
+
+
+async def search_notebooks(query: str, max_results: int = 25, path_prefix: Optional[str] = None) -> Dict[str, Any]:
+    """Search for notebooks in the workspace.
+
+    Args:
+        query: Search query string
+        max_results: Maximum number of results to return
+        path_prefix: Limit search to paths starting with this prefix
+
+    Returns:
+        List of matching notebook objects
+    """
+    params = {
+        "query": query,
+        "max_results": max_results
+    }
+    if path_prefix:
+        params["path_prefix"] = path_prefix
+
+    result = await mcp_client._call_mcp_tool("search_notebooks", params)
     return result
 
 
@@ -465,11 +748,21 @@ async def set_table_context(table_name: str, context_data: Dict[str, Any]) -> Di
     """Set table context metadata using Unity Catalog properties and column comments."""
     import json
 
-    # Prepare JSON strings for table properties
-    business_context = json.dumps(context_data.get("business_context", {}))
-    field_mappings = json.dumps(context_data.get("field_mappings", {}))
-    transformations = json.dumps(context_data.get("transformations", {}))
-    common_queries = json.dumps(context_data.get("common_queries", []))
+    # Prepare JSON strings for table properties with error handling and sanitization
+    try:
+        # Sanitize data before JSON serialization
+        sanitized_business_context = sanitize_for_json(context_data.get("business_context", {}))
+        sanitized_field_mappings = sanitize_for_json(context_data.get("field_mappings", {}))
+        sanitized_transformations = sanitize_for_json(context_data.get("transformations", {}))
+        sanitized_common_queries = sanitize_for_json(context_data.get("common_queries", []))
+
+        business_context = json.dumps(sanitized_business_context, ensure_ascii=False)
+        field_mappings = json.dumps(sanitized_field_mappings, ensure_ascii=False)
+        transformations = json.dumps(sanitized_transformations, ensure_ascii=False)
+        common_queries = json.dumps(sanitized_common_queries, ensure_ascii=False)
+    except (TypeError, ValueError) as e:
+        logger.error(f"Error serializing context data to JSON: {e}")
+        return {"status": "error", "error": f"Invalid context data format: {str(e)}"}
 
     # Log JSON sizes for debugging
     logger.debug(f"JSON sizes - business_context: {len(business_context)}, field_mappings: {len(field_mappings)}, transformations: {len(transformations)}")
@@ -487,11 +780,23 @@ async def set_table_context(table_name: str, context_data: Dict[str, Any]) -> Di
         field_mappings = json.dumps(truncated_mappings)
         logger.info(f"Truncated field mappings to {len(field_mappings)} chars")
 
-    # Escape single quotes for SQL
-    business_context = business_context.replace("'", "''")
-    field_mappings = field_mappings.replace("'", "''")
-    transformations = transformations.replace("'", "''")
-    common_queries = common_queries.replace("'", "''")
+    # Safely escape strings for SQL with comprehensive sanitization
+    def safe_sql_escape(text: str) -> str:
+        """Safely escape text for SQL string literals."""
+        if not text:
+            return ""
+        # Replace problematic characters
+        text = text.replace("'", "''")  # Escape single quotes
+        text = text.replace("\\", "\\\\")  # Escape backslashes
+        text = text.replace("\n", "\\n")  # Escape newlines
+        text = text.replace("\r", "\\r")  # Escape carriage returns
+        text = text.replace("\t", "\\t")  # Escape tabs
+        return text
+
+    business_context = safe_sql_escape(business_context)
+    field_mappings = safe_sql_escape(field_mappings)
+    transformations = safe_sql_escape(transformations)
+    common_queries = safe_sql_escape(common_queries)
 
     # Set table properties
     table_props_sql = f"""
@@ -532,8 +837,18 @@ async def set_table_context(table_name: str, context_data: Dict[str, Any]) -> Di
             comment += f" | {notes}"
 
         if comment:
-            # Escape single quotes for SQL
-            comment = comment.replace("'", "''")
+            # Sanitize comment for SQL - escape quotes and remove problematic characters
+            comment = comment.replace("'", "''")  # Escape single quotes
+            comment = comment.replace('"', '""')  # Escape double quotes
+            comment = comment.replace('\n', ' ')  # Replace newlines with spaces
+            comment = comment.replace('\r', ' ')  # Replace carriage returns
+            comment = comment.replace('\t', ' ')  # Replace tabs with spaces
+            comment = comment.strip()  # Remove leading/trailing whitespace
+
+            # Limit comment length to prevent issues
+            if len(comment) > 500:
+                comment = comment[:497] + "..."
+                logger.warning(f"Truncated comment for column {field_name} to 500 characters")
 
             column_comment_sql = f"""
             ALTER TABLE {table_name}
@@ -676,18 +991,36 @@ def get_table_metadata_sync(table_name: str) -> Dict[str, Any]:
 
 
 def set_table_context_sync(table_name: str, context_data: Dict[str, Any]) -> Dict[str, Any]:
-    """Synchronous wrapper for set_table_context."""
+    """Synchronous wrapper for set_table_context with enhanced error handling."""
     try:
+        # Import error handling utilities
+        from .error_handlers import validate_table_context_data, create_user_friendly_error_message
+
+        # Validate and sanitize context data
+        sanitized_context = validate_table_context_data(context_data)
+
         try:
             loop = asyncio.get_running_loop()
             import concurrent.futures
             with concurrent.futures.ThreadPoolExecutor() as executor:
-                future = executor.submit(asyncio.run, set_table_context(table_name, context_data))
+                future = executor.submit(asyncio.run, set_table_context(table_name, sanitized_context))
                 return future.result()
         except RuntimeError:
-            return asyncio.run(set_table_context(table_name, context_data))
+            return asyncio.run(set_table_context(table_name, sanitized_context))
+    except json.JSONDecodeError as e:
+        logger.error(f"JSON parsing error in set_table_context_sync: {e}")
+        return {
+            "status": "error",
+            "error": "There was an issue with special characters in your descriptions. Please use simpler descriptions without quotes or special characters."
+        }
     except Exception as e:
-        return {"status": "error", "error": str(e)}
+        logger.error(f"Error in set_table_context_sync: {e}")
+        try:
+            from .error_handlers import create_user_friendly_error_message
+            error_msg = create_user_friendly_error_message(e)
+        except:
+            error_msg = str(e)
+        return {"status": "error", "error": error_msg}
 
 
 def read_csv_content_sync(csv_path: str) -> Dict[str, Any]:
@@ -1220,5 +1553,127 @@ def stop_warehouse_sync(warehouse_id: str) -> Dict[str, Any]:
                 return future.result()
         except RuntimeError:
             return asyncio.run(stop_warehouse(warehouse_id))
+    except Exception as e:
+        return {"status": "error", "error": str(e)}
+
+
+# Synchronous wrappers for notebook management tools
+def list_notebooks_sync(path: str = "/", object_type: Optional[str] = None) -> Dict[str, Any]:
+    """Synchronous wrapper for list_notebooks."""
+    try:
+        try:
+            loop = asyncio.get_running_loop()
+            import concurrent.futures
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                future = executor.submit(asyncio.run, list_notebooks(path, object_type))
+                return future.result()
+        except RuntimeError:
+            return asyncio.run(list_notebooks(path, object_type))
+    except Exception as e:
+        return {"status": "error", "error": str(e)}
+
+
+def get_notebook_info_sync(path: str) -> Dict[str, Any]:
+    """Synchronous wrapper for get_notebook_info."""
+    try:
+        try:
+            loop = asyncio.get_running_loop()
+            import concurrent.futures
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                future = executor.submit(asyncio.run, get_notebook_info(path))
+                return future.result()
+        except RuntimeError:
+            return asyncio.run(get_notebook_info(path))
+    except Exception as e:
+        return {"status": "error", "error": str(e)}
+
+
+def export_notebook_sync(path: str, format: str = "SOURCE", direct_download: bool = False) -> Dict[str, Any]:
+    """Synchronous wrapper for export_notebook."""
+    try:
+        try:
+            loop = asyncio.get_running_loop()
+            import concurrent.futures
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                future = executor.submit(asyncio.run, export_notebook(path, format, direct_download))
+                return future.result()
+        except RuntimeError:
+            return asyncio.run(export_notebook(path, format, direct_download))
+    except Exception as e:
+        return {"status": "error", "error": str(e)}
+
+
+def create_notebook_sync(path: str, language: str = "PYTHON", content: Optional[str] = None) -> Dict[str, Any]:
+    """Synchronous wrapper for create_notebook."""
+    try:
+        try:
+            loop = asyncio.get_running_loop()
+            import concurrent.futures
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                future = executor.submit(asyncio.run, create_notebook(path, language, content))
+                return future.result()
+        except RuntimeError:
+            return asyncio.run(create_notebook(path, language, content))
+    except Exception as e:
+        return {"status": "error", "error": str(e)}
+
+
+def import_notebook_sync(path: str, content: str, format: str = "AUTO",
+                        language: Optional[str] = None, overwrite: bool = False) -> Dict[str, Any]:
+    """Synchronous wrapper for import_notebook."""
+    try:
+        try:
+            loop = asyncio.get_running_loop()
+            import concurrent.futures
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                future = executor.submit(asyncio.run, import_notebook(path, content, format, language, overwrite))
+                return future.result()
+        except RuntimeError:
+            return asyncio.run(import_notebook(path, content, format, language, overwrite))
+    except Exception as e:
+        return {"status": "error", "error": str(e)}
+
+
+def delete_notebook_sync(path: str, recursive: bool = False) -> Dict[str, Any]:
+    """Synchronous wrapper for delete_notebook."""
+    try:
+        try:
+            loop = asyncio.get_running_loop()
+            import concurrent.futures
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                future = executor.submit(asyncio.run, delete_notebook(path, recursive))
+                return future.result()
+        except RuntimeError:
+            return asyncio.run(delete_notebook(path, recursive))
+    except Exception as e:
+        return {"status": "error", "error": str(e)}
+
+
+def create_directory_sync(path: str) -> Dict[str, Any]:
+    """Synchronous wrapper for create_directory."""
+    try:
+        try:
+            loop = asyncio.get_running_loop()
+            import concurrent.futures
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                future = executor.submit(asyncio.run, create_directory(path))
+                return future.result()
+        except RuntimeError:
+            return asyncio.run(create_directory(path))
+    except Exception as e:
+        return {"status": "error", "error": str(e)}
+
+
+def search_notebooks_sync(query: str, max_results: int = 25, path_prefix: Optional[str] = None) -> Dict[str, Any]:
+    """Synchronous wrapper for search_notebooks."""
+    try:
+        try:
+            loop = asyncio.get_running_loop()
+            import concurrent.futures
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                future = executor.submit(asyncio.run, search_notebooks(query, max_results, path_prefix))
+                return future.result()
+        except RuntimeError:
+            return asyncio.run(search_notebooks(query, max_results, path_prefix))
     except Exception as e:
         return {"status": "error", "error": str(e)}

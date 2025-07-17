@@ -17,7 +17,10 @@ from .mcp_client import (
     list_clusters_sync, get_cluster_sync, start_cluster_sync, terminate_cluster_sync, execute_sql_sync,
     list_warehouses_sync, get_warehouse_sync, start_warehouse_sync, stop_warehouse_sync,
     get_table_metadata_sync, set_table_context_sync, load_context_from_csv_sync,
-    read_csv_content_sync, process_csv_for_table_context_sync, convert_schema_csv_to_context_sync
+    read_csv_content_sync, process_csv_for_table_context_sync, convert_schema_csv_to_context_sync,
+    # Notebook management tools
+    list_notebooks_sync, get_notebook_info_sync, export_notebook_sync, create_notebook_sync,
+    import_notebook_sync, delete_notebook_sync, create_directory_sync, search_notebooks_sync
 )
 
 # Load environment variables from .env file
@@ -32,6 +35,11 @@ AZURE_OPENAI_API_VERSION = os.getenv("AZURE_OPENAI_API_VERSION")
 os.environ["AZURE_API_KEY"] = AZURE_OPENAI_API_KEY
 os.environ["AZURE_API_BASE"] = AZURE_OPENAI_ENDPOINT
 os.environ["AZURE_API_VERSION"] = AZURE_OPENAI_API_VERSION
+
+# Set LiteLLM timeout and retry configurations
+os.environ["LITELLM_REQUEST_TIMEOUT"] = os.getenv("LITELLM_REQUEST_TIMEOUT", "120")
+os.environ["LITELLM_MAX_RETRIES"] = os.getenv("LITELLM_MAX_RETRIES", "3")
+os.environ["LITELLM_RETRY_DELAY"] = os.getenv("LITELLM_RETRY_DELAY", "2")
 
 
 def get_data_science_capabilities() -> dict:
@@ -48,6 +56,8 @@ def get_data_science_capabilities() -> dict:
             "Data analysis and exploration using Databricks",
             "SQL query execution for data insights",
             "Cluster management for computational resources",
+            "Notebook creation and management for analysis workflows",
+            "Workspace organization and notebook discovery",
             "Job execution for data processing workflows",
             "Integration with centralized MCP server infrastructure",
             "Service principal authentication for secure Databricks access"
@@ -67,7 +77,15 @@ def get_data_science_capabilities() -> dict:
                 "stop_warehouse_sync - Stop running SQL warehouses to save costs",
                 "list_jobs_sync - View available data processing jobs",
                 "get_job_sync - Get detailed job information",
-                "run_job_sync - Execute data processing workflows"
+                "run_job_sync - Execute data processing workflows",
+                "list_notebooks_sync - List notebooks and directories in workspace",
+                "get_notebook_info_sync - Get metadata about notebooks and workspace objects",
+                "create_notebook_sync - Create new notebooks for analysis",
+                "export_notebook_sync - Export notebooks in various formats",
+                "import_notebook_sync - Import notebooks from external sources",
+                "delete_notebook_sync - Delete notebooks and directories",
+                "create_directory_sync - Create workspace directories",
+                "search_notebooks_sync - Search for notebooks by name or content"
             ]
         },
         "use_cases": [
@@ -76,7 +94,11 @@ def get_data_science_capabilities() -> dict:
             "Statistical analysis and reporting",
             "Data pipeline monitoring",
             "Performance optimization queries",
-            "Business intelligence insights"
+            "Business intelligence insights",
+            "Creating analysis notebooks dynamically",
+            "Organizing workspace and notebook management",
+            "Collaborative data science workflows",
+            "Documenting analysis processes in notebooks"
         ]
     }
 
@@ -141,8 +163,9 @@ try:
 Your primary capabilities include:
 1. **Data Analysis**: Execute SQL queries to explore and analyze data
 2. **Cluster Management**: Manage Databricks clusters for computational resources
-3. **Job Execution**: Run data processing workflows and jobs
-4. **Business Intelligence**: Provide insights and recommendations based on data
+3. **Notebook Management**: Create, manage, and organize Databricks notebooks
+4. **Job Execution**: Run data processing workflows and jobs
+5. **Business Intelligence**: Provide insights and recommendations based on data
 
 You have access to Databricks through a centralized MCP server with the following tools:
 
@@ -152,6 +175,16 @@ You have access to Databricks through a centralized MCP server with the followin
 
 **Data Analysis:**
 - execute_sql_sync: Run SQL queries for data analysis
+
+**Notebook Management:**
+- list_notebooks_sync: List notebooks and directories in workspace
+- get_notebook_info_sync: Get metadata about notebooks and workspace objects
+- create_notebook_sync: Create new notebooks for analysis
+- export_notebook_sync: Export notebooks in various formats (SOURCE, HTML, JUPYTER, DBC)
+- import_notebook_sync: Import notebooks from external sources
+- delete_notebook_sync: Delete notebooks and directories
+- create_directory_sync: Create workspace directories for organization
+- search_notebooks_sync: Search for notebooks by name or content
 
 **Table Metadata Management:**
 - get_table_metadata_sync: Get table metadata and context information
@@ -170,6 +203,13 @@ When users ask about tables or data analysis:
 4. Use appropriate SQL queries with proper field transformations
 5. Explain your findings using business context from metadata
 6. Suggest follow-up analyses when relevant
+
+For notebook management workflows:
+1. **Creating Analysis Notebooks**: When users need to perform complex analysis, offer to create dedicated notebooks
+2. **Workspace Organization**: Help users organize their notebooks into logical directories
+3. **Notebook Discovery**: Use list_notebooks_sync and search_notebooks_sync to help users find existing work
+4. **Collaboration**: Export notebooks for sharing or import notebooks from team members
+5. **Documentation**: Create notebooks that document analysis processes and findings
 
 When users ask about table information (any of these patterns):
 - "what do you understand/know about table X"
@@ -227,6 +267,9 @@ Be helpful in explaining technical concepts in accessible terms.""",
             list_warehouses_sync, get_warehouse_sync, start_warehouse_sync, stop_warehouse_sync,
             # Data analysis tools
             execute_sql_sync,
+            # Notebook management tools
+            list_notebooks_sync, get_notebook_info_sync, export_notebook_sync, create_notebook_sync,
+            import_notebook_sync, delete_notebook_sync, create_directory_sync, search_notebooks_sync,
             # Table metadata management tools
             get_table_metadata_sync, set_table_context_sync, load_context_from_csv_sync,
             # CSV processing tools (workaround for file upload limitations)
