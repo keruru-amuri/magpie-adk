@@ -67,3 +67,8 @@ htmlcov/
 
 # Documentation builds
 docs/_build/
+
+# Frontend dependencies
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
